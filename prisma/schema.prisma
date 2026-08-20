@@ -6,3 +6,38 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Host {
+  id           String   @id @db.Uuid
+  hostname     String   @db.VarChar(255)
+  platform     String   @db.VarChar(32)
+  architecture String   @db.VarChar(32)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  agents       Agent[]
+}
+
+model Agent {
+  id             String      @id @db.Uuid
+  hostId         String      @db.Uuid
+  version        String      @db.VarChar(32)
+  credentialHash String      @db.Char(64)
+  enrolledAt     DateTime    @default(now())
+  lastSeenAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  host           Host        @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  heartbeats     Heartbeat[]
+
+  @@index([hostId])
+  @@index([lastSeenAt])
+}
+
+model Heartbeat {
+  id         BigInt   @id @default(autoincrement())
+  agentId    String   @db.Uuid
+  receivedAt DateTime @default(now())
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, receivedAt(sort: Desc)])
+}
