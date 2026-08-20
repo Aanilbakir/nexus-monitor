@@ -17,15 +17,11 @@ export function readAgentEnvironment(
   try {
     apiUrl = new URL(source.NEXUS_API_URL ?? '');
   } catch {
-    throw new Error(
-      'Invalid NEXUS_API_URL: expected an HTTP or HTTPS URL.',
-    );
+    throw new Error('Invalid NEXUS_API_URL: expected an HTTP or HTTPS URL.');
   }
 
   if (apiUrl.protocol !== 'http:' && apiUrl.protocol !== 'https:') {
-    throw new Error(
-      'Invalid NEXUS_API_URL: expected an HTTP or HTTPS URL.',
-    );
+    throw new Error('Invalid NEXUS_API_URL: expected an HTTP or HTTPS URL.');
   }
 
   return {

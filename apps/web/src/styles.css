@@ -2,7 +2,11 @@
   color: #d9e2dc;
   background: #090d0b;
   font-family:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -17,8 +21,7 @@ body {
   min-width: 320px;
   min-height: 100dvh;
   background:
-    linear-gradient(rgba(137, 255, 179, 0.025) 1px, transparent 1px),
-    #090d0b;
+    linear-gradient(rgba(137, 255, 179, 0.025) 1px, transparent 1px), #090d0b;
   background-size: 100% 48px;
 }
 
@@ -42,7 +45,7 @@ footer {
   justify-content: space-between;
   min-height: 64px;
   border-bottom: 1px solid #233029;
-  font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'SFMono-Regular', monospace;
   font-size: 12px;
   letter-spacing: 0.04em;
 }
@@ -82,7 +85,7 @@ footer {
   gap: 10px;
   margin-bottom: 40px;
   color: #b9c7bf;
-  font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'SFMono-Regular', monospace;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -101,7 +104,7 @@ footer {
 
 .kicker {
   margin: 0 0 12px;
-  font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'SFMono-Regular', monospace;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -149,7 +152,7 @@ h1 {
 
 .boundary dd {
   margin: 0;
-  font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'SFMono-Regular', monospace;
   font-size: 11px;
   text-transform: uppercase;
 }

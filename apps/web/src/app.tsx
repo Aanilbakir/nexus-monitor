@@ -4,7 +4,11 @@ export function App() {
   return (
     <main className="shell">
       <header className="topbar">
-        <a className="wordmark" href="#overview" aria-label="NEXUS Monitor home">
+        <a
+          className="wordmark"
+          href="#overview"
+          aria-label="NEXUS Monitor home"
+        >
           <span aria-hidden="true">NX</span>
           NEXUS Monitor
         </a>
@@ -21,8 +25,8 @@ export function App() {
           <p className="kicker">Open-source observability infrastructure</p>
           <h1 id="page-title">NEXUS Monitor</h1>
           <p className="summary">
-            The monitoring workspace is ready for host registration and telemetry
-            in the next phase.
+            The monitoring workspace is ready for host registration and
+            telemetry in the next phase.
           </p>
         </div>
 

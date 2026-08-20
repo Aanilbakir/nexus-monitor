@@ -33,6 +33,7 @@
 ### Task 1: Repository and Workspace Foundation
 
 **Files:**
+
 - Create: `package.json`
 - Create: `pnpm-workspace.yaml`
 - Create: `tsconfig.base.json`
@@ -44,6 +45,7 @@
 - Create: `.npmrc`
 
 **Interfaces:**
+
 - Consumes: Node.js 24 and pnpm 11 installed on the contributor machine.
 - Produces: root commands `build`, `lint`, `typecheck`, `test`, `format:check`, `prisma:validate`, and `prisma:generate`.
 
@@ -81,6 +83,7 @@ git commit -m "chore: establish pnpm workspace"
 ### Task 2: Shared Contracts Package
 
 **Files:**
+
 - Create: `packages/contracts/package.json`
 - Create: `packages/contracts/tsconfig.json`
 - Create: `packages/contracts/tsconfig.build.json`
@@ -89,6 +92,7 @@ git commit -m "chore: establish pnpm workspace"
 - Create: `packages/contracts/src/health.test.ts`
 
 **Interfaces:**
+
 - Consumes: root TypeScript and test configuration.
 - Produces: `ServiceHealth`, `SERVICE_HEALTH_STATUS`, and `createServiceHealth(service, timestamp)` from `@nexus-monitor/contracts`.
 
@@ -134,6 +138,7 @@ git commit -m "feat: add shared service health contract"
 ### Task 3: NestJS API Foundation
 
 **Files:**
+
 - Create: `apps/api/package.json`
 - Create: `apps/api/tsconfig.json`
 - Create: `apps/api/tsconfig.build.json`
@@ -147,6 +152,7 @@ git commit -m "feat: add shared service health contract"
 - Create: `apps/api/src/health/health.module.ts`
 
 **Interfaces:**
+
 - Consumes: `createServiceHealth` from `@nexus-monitor/contracts` and environment variables `API_HOST`, `API_PORT`, `NODE_ENV`.
 - Produces: `GET /health` returning `ServiceHealth`; `readApiEnvironment(source)` returning validated API startup configuration.
 
@@ -188,6 +194,7 @@ git commit -m "feat: establish api health boundary"
 ### Task 4: Monitoring Agent Foundation
 
 **Files:**
+
 - Create: `apps/agent/package.json`
 - Create: `apps/agent/tsconfig.json`
 - Create: `apps/agent/tsconfig.build.json`
@@ -198,6 +205,7 @@ git commit -m "feat: establish api health boundary"
 - Create: `apps/agent/src/main.ts`
 
 **Interfaces:**
+
 - Consumes: environment variables `NEXUS_API_URL` and `AGENT_ID`; no network calls in Phase 0.
 - Produces: `readAgentEnvironment(source)` and `createAgentReadiness(agentId, timestamp)`.
 
@@ -233,6 +241,7 @@ git commit -m "feat: establish agent runtime foundation"
 ### Task 5: React Dashboard Foundation
 
 **Files:**
+
 - Create: `apps/web/package.json`
 - Create: `apps/web/tsconfig.json`
 - Create: `apps/web/tsconfig.app.json`
@@ -247,6 +256,7 @@ git commit -m "feat: establish agent runtime foundation"
 - Create: `apps/web/src/vite-env.d.ts`
 
 **Interfaces:**
+
 - Consumes: browser runtime only; no API or fake metric dependency in Phase 0.
 - Produces: a responsive foundation page identifying NEXUS Monitor and clearly labeling the repository as the monitoring platform foundation.
 
@@ -278,12 +288,14 @@ git commit -m "feat: establish dashboard foundation"
 ### Task 6: Prisma and Docker Development Infrastructure
 
 **Files:**
+
 - Create: `prisma/schema.prisma`
 - Create: `prisma.config.ts`
 - Create: `docker-compose.yml`
 - Create: `.env.example`
 
 **Interfaces:**
+
 - Consumes: `DATABASE_URL`, `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` from local environment configuration.
 - Produces: validated Prisma client configuration and a health-checked local PostgreSQL service.
 
@@ -317,6 +329,7 @@ git commit -m "chore: add postgres development infrastructure"
 ### Task 7: Public GitHub Governance and Automation
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`
 - Create: `.github/dependabot.yml`
 - Create: `.github/ISSUE_TEMPLATE/bug_report.yml`
@@ -329,6 +342,7 @@ git commit -m "chore: add postgres development infrastructure"
 - Create: `SECURITY.md`
 
 **Interfaces:**
+
 - Consumes: root pnpm quality commands.
 - Produces: pull-request validation and standard public contribution/reporting paths.
 
@@ -364,12 +378,14 @@ git commit -m "docs: add open source project governance"
 ### Task 8: Project Documentation and Phase Tracking
 
 **Files:**
+
 - Create: `README.md`
 - Create: `PROJECT_PLAN.md`
 - Create: `CHANGELOG.md`
 - Modify: `docs/superpowers/plans/2026-08-20-phase-0-foundation.md`
 
 **Interfaces:**
+
 - Consumes: the exact commands and structure created by Tasks 1-7.
 - Produces: complete contributor onboarding, roadmap, and auditable Phase 0 progress.
 
@@ -403,10 +419,12 @@ git commit -m "docs: document phase 0 foundation"
 ### Task 9: Full Verification and Phase 0 Report
 
 **Files:**
+
 - Create: `docs/reports/phase-0-report.md`
 - Modify: `CHANGELOG.md` only if verification reveals a documented deviation.
 
 **Interfaces:**
+
 - Consumes: every Phase 0 deliverable and root quality command.
 - Produces: evidence-backed Phase 0 results and decisions required before Phase 1.
 
@@ -456,4 +474,3 @@ git commit -m "docs: report phase 0 verification"
 - [ ] **Step 7: Stop before Phase 1**
 
 Report Phase 0 results and request explicit approval before implementing host registration or heartbeat behavior.
-

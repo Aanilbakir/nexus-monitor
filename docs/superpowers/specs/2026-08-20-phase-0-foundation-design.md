@@ -82,4 +82,3 @@ Before Phase 1, the project must decide:
 - heartbeat interval and offline threshold
 - initial API versioning convention
 - whether local development permits an explicitly labeled insecure agent mode
-
