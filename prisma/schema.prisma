@@ -18,19 +18,41 @@ model Host {
 }
 
 model Agent {
-  id             String      @id @db.Uuid
-  hostId         String      @db.Uuid
-  version        String      @db.VarChar(32)
-  credentialHash String      @db.Char(64)
-  enrolledAt     DateTime    @default(now())
+  id             String               @id @db.Uuid
+  hostId         String               @db.Uuid
+  version        String               @db.VarChar(32)
+  credentialHash String               @db.Char(64)
+  enrolledAt     DateTime             @default(now())
   lastSeenAt     DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  host           Host        @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  host           Host                 @relation(fields: [hostId], references: [id], onDelete: Cascade)
   heartbeats     Heartbeat[]
+  metricSamples  SystemMetricSample[]
 
   @@index([hostId])
   @@index([lastSeenAt])
+}
+
+model SystemMetricSample {
+  id                      BigInt   @id @default(autoincrement())
+  agentId                 String   @db.Uuid
+  collectedAt             DateTime
+  receivedAt              DateTime @default(now())
+  cpuPercent              Float
+  memoryTotalBytes        BigInt
+  memoryUsedBytes         BigInt
+  diskTotalBytes          BigInt
+  diskUsedBytes           BigInt
+  diskFreeBytes           BigInt
+  networkReceivedBytes    BigInt
+  networkTransmittedBytes BigInt
+  uptimeSeconds           BigInt
+  agent                   Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, collectedAt])
+  @@index([agentId, collectedAt(sort: Desc)])
+  @@index([receivedAt])
 }
 
 model Heartbeat {
