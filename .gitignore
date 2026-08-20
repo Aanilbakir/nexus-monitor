@@ -12,3 +12,4 @@ Thumbs.db
 .vscode/
 packages/database/src/generated/
 prisma/generated/
+.worktrees/
