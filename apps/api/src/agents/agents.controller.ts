@@ -13,7 +13,10 @@ import type {
   AgentRegistrationResponse,
 } from '@nexus-monitor/contracts';
 
-import { AgentService, UnauthorizedAgentError } from './domain/agent.service.js';
+import {
+  AgentService,
+  UnauthorizedAgentError,
+} from './domain/agent.service.js';
 import { AgentHeartbeatDto } from './dto/agent-heartbeat.dto.js';
 import { AgentRegistrationDto } from './dto/agent-registration.dto.js';
 import { parseBearerToken } from './transport.js';

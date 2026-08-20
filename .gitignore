@@ -11,3 +11,4 @@ Thumbs.db
 .idea/
 .vscode/
 packages/database/src/generated/
+prisma/generated/

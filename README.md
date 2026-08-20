@@ -3,7 +3,7 @@
 NEXUS Monitor is an open-source system monitoring and observability platform for local and remote machines, services, applications, and infrastructure. It is designed as a serious developer tool with explicit boundaries between collection, ingestion, persistence, realtime delivery, presentation, and alert evaluation.
 
 > [!IMPORTANT]
-> The repository is currently at Phase 0. The foundation is operational, but host registration and telemetry begin in the next phases. The interface does not present simulated monitoring data as a finished feature.
+> The repository is currently at Phase 1. Agents can enroll and report host availability; system metric collection and the live dashboard arrive in later phases. The interface does not present simulated monitoring data as a finished feature.
 
 ## Screenshots
 
@@ -59,12 +59,13 @@ cd nexus-monitor
 pnpm install
 ```
 
-Copy `.env.example` to `.env`, then replace the example local database password in both `POSTGRES_PASSWORD` and `DATABASE_URL`.
+Copy `.env.example` to `.env`, then replace the example database password and enrollment token. The API and agent must use the same `AGENT_ENROLLMENT_TOKEN` for first enrollment.
 
 ```bash
 docker compose up -d postgres
 pnpm prisma:validate
 pnpm prisma:generate
+pnpm exec prisma migrate deploy
 ```
 
 ## Development
@@ -83,7 +84,9 @@ pnpm --filter @nexus-monitor/web dev
 pnpm --filter @nexus-monitor/agent dev
 ```
 
-The agent requires `AGENT_ID` and `NEXUS_API_URL` in its environment. During Phase 0 it validates configuration and reports readiness locally. It does not collect or transmit machine data.
+The agent requires `AGENT_ENROLLMENT_TOKEN`, `NEXUS_AGENT_STATE_PATH`, and `NEXUS_API_URL`. On first start it creates stable UUIDs, enrolls through `POST /api/v1/agents/register`, stores its issued credential locally, and sends authenticated heartbeats every 15 seconds. The API considers an agent offline after 45 seconds without a heartbeat.
+
+The API exposes `GET /api/v1/health`, `POST /api/v1/agents/register`, and `POST /api/v1/agents/:agentId/heartbeat`. Enrollment rotates the agent credential; only its SHA-256 hash is stored in PostgreSQL.
 
 ## Quality commands
 
@@ -116,8 +119,8 @@ docs/
 
 ## Roadmap
 
-- Phase 0: repository and runtime foundation
-- Phase 1: host registration and heartbeat
+- Phase 0: repository and runtime foundation (complete)
+- Phase 1: host registration and heartbeat (complete)
 - Phase 2: core system metrics
 - Phase 3: realtime dashboard
 - Phase 4: historical metrics and charts

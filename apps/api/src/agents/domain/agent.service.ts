@@ -1,13 +1,15 @@
 import {
   createHeartbeatResponse,
   createRegistrationResponse,
-  type AgentHeartbeatRequest,
-  type AgentHeartbeatResponse,
-  type AgentRegistrationRequest,
-  type AgentRegistrationResponse,
+} from '@nexus-monitor/contracts';
+import type {
+  AgentHeartbeatRequest,
+  AgentHeartbeatResponse,
+  AgentRegistrationRequest,
+  AgentRegistrationResponse,
 } from '@nexus-monitor/contracts';
 
-import { CredentialService } from './credential.service.js';
+import type { CredentialService } from './credential.service.js';
 
 export interface EnrollAgentInput extends AgentRegistrationRequest {
   readonly credentialHash: string;

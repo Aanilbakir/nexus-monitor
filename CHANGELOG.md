@@ -15,3 +15,8 @@ All notable changes to NEXUS Monitor are documented in this file. The format fol
 - GitHub Actions, Dependabot, issue forms, pull request template, and public project policies.
 - Phase design, implementation plan, roadmap, and contributor documentation.
 - Evidence-backed Phase 0 verification report.
+- Persistent host, agent, and heartbeat models with the initial PostgreSQL migration.
+- Authenticated agent enrollment with one-time credential delivery and hashed storage.
+- Stable local agent identity, atomic credential persistence, and 15-second heartbeats.
+- Online/offline availability derived from a 45-second heartbeat threshold.
+- Versioned `/api/v1` agent registration and heartbeat endpoints.

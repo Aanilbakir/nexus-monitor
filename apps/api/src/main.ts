@@ -10,6 +10,7 @@ async function bootstrap(): Promise<void> {
   const environment = readApiEnvironment(process.env);
   const app = await NestFactory.create(AppModule);
 
+  app.enableShutdownHooks();
   app.setGlobalPrefix('api/v1');
 
   app.useGlobalPipes(

@@ -20,20 +20,18 @@ class InMemoryAgentRepository implements AgentRepository {
   public credentialHash: string | null = null;
   public heartbeatAt: Date | null = null;
 
-  public async enroll(input: {
-    readonly credentialHash: string;
-  }): Promise<void> {
+  public enroll(input: { readonly credentialHash: string }): Promise<void> {
     this.credentialHash = input.credentialHash;
+    return Promise.resolve();
   }
 
-  public async findCredentialHash(): Promise<string | null> {
-    return this.credentialHash;
+  public findCredentialHash(): Promise<string | null> {
+    return Promise.resolve(this.credentialHash);
   }
 
-  public async recordHeartbeat(input: {
-    readonly receivedAt: Date;
-  }): Promise<void> {
+  public recordHeartbeat(input: { readonly receivedAt: Date }): Promise<void> {
     this.heartbeatAt = input.receivedAt;
+    return Promise.resolve();
   }
 }
 
@@ -47,10 +45,7 @@ describe('AgentService', () => {
     );
     const service = new AgentService(repository, credentials, () => now);
 
-    const response = await service.register(
-      registration,
-      'enrollment-secret',
-    );
+    const response = await service.register(registration, 'enrollment-secret');
 
     expect(response.agentToken).toBe(
       'BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc',
@@ -68,9 +63,9 @@ describe('AgentService', () => {
       () => now,
     );
 
-    await expect(service.register(registration, 'wrong')).rejects.toBeInstanceOf(
-      UnauthorizedAgentError,
-    );
+    await expect(
+      service.register(registration, 'wrong'),
+    ).rejects.toBeInstanceOf(UnauthorizedAgentError);
   });
 
   it('records a heartbeat authenticated by the agent credential', async () => {
@@ -79,7 +74,10 @@ describe('AgentService', () => {
       Buffer.alloc(32, 7),
     );
     const service = new AgentService(repository, credentials, () => now);
-    const registered = await service.register(registration, 'enrollment-secret');
+    const registered = await service.register(
+      registration,
+      'enrollment-secret',
+    );
 
     const response = await service.heartbeat(
       registration.agentId,

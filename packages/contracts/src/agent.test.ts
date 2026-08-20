@@ -8,10 +8,7 @@ import {
 describe('agent contracts', () => {
   it('creates a one-time registration credential response', () => {
     expect(
-      createRegistrationResponse(
-        'agent-secret',
-        '2026-08-21T00:00:00.000Z',
-      ),
+      createRegistrationResponse('agent-secret', '2026-08-21T00:00:00.000Z'),
     ).toEqual({
       agentToken: 'agent-secret',
       heartbeatIntervalSeconds: 15,

@@ -18,10 +18,7 @@ export function readApiEnvironment(
     );
   }
 
-  const agentEnrollmentToken = readRequired(
-    source,
-    'AGENT_ENROLLMENT_TOKEN',
-  );
+  const agentEnrollmentToken = readRequired(source, 'AGENT_ENROLLMENT_TOKEN');
   const databaseUrl = readRequired(source, 'DATABASE_URL');
 
   return {

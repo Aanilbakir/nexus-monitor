@@ -16,6 +16,8 @@ Development advances one explicitly approved phase at a time. A phase is complet
 
 **Exit criteria:** An agent can register and send validated heartbeats; the API persists them; missing heartbeats change host status; unit and integration tests cover the lifecycle.
 
+**Status:** Complete. Stable agent and host identities, authenticated enrollment, credential rotation, heartbeat persistence, and the 45-second availability boundary are implemented and covered by automated tests.
+
 ## Phase 2: Core system metrics
 
 **Goal:** Collect and ingest CPU, memory, disk, uptime, and network measurements with cross-platform boundaries.

@@ -1,11 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Inject, Module, type OnApplicationShutdown } from '@nestjs/common';
 import { createPrismaClient, type PrismaClient } from '@nexus-monitor/database';
 
 import { readApiEnvironment } from '../config/environment.js';
-import {
-  AgentService,
-  type AgentRepository,
-} from './domain/agent.service.js';
+import { AgentService, type AgentRepository } from './domain/agent.service.js';
 import { CredentialService } from './domain/credential.service.js';
 import { PrismaAgentRepository } from './infrastructure/prisma-agent.repository.js';
 import { AgentsController } from './agents.controller.js';
@@ -47,4 +44,10 @@ const CREDENTIALS = Symbol('CREDENTIALS');
     },
   ],
 })
-export class AgentsModule {}
+export class AgentsModule implements OnApplicationShutdown {
+  public constructor(@Inject(PRISMA) private readonly prisma: PrismaClient) {}
+
+  public async onApplicationShutdown(): Promise<void> {
+    await this.prisma.$disconnect();
+  }
+}
