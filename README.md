@@ -1,0 +1,137 @@
+# NEXUS Monitor
+
+NEXUS Monitor is an open-source system monitoring and observability platform for local and remote machines, services, applications, and infrastructure. It is designed as a serious developer tool with explicit boundaries between collection, ingestion, persistence, realtime delivery, presentation, and alert evaluation.
+
+> [!IMPORTANT]
+> The repository is currently at Phase 0. The foundation is operational, but host registration and telemetry begin in the next phases. The interface does not present simulated monitoring data as a finished feature.
+
+## Screenshots
+
+Screenshots will be added when the realtime dashboard is implemented in Phase 3.
+
+## Architecture
+
+```text
+Monitoring Agent  ->  NestJS API  ->  PostgreSQL
+                           |
+                           +------> Realtime transport (Phase 3)
+                                      |
+                                      v
+                                React dashboard
+```
+
+The agent, API, persistence layer, realtime transport, dashboard, and alert logic remain separate system boundaries. Applications cannot import another application's internal modules. Shared network and event shapes belong in `packages/contracts`.
+
+## Planned capabilities
+
+- CPU, memory, disk, network, uptime, and operating system monitoring
+- Local and remote host status
+- Process and service health visibility
+- Historical metrics and time-range queries
+- Realtime dashboard updates
+- Threshold and heartbeat alerts
+- System events and health timelines
+- Extensible foundations for containers, databases, API checks, logs, and incident analysis
+
+## Technology
+
+- Node.js 24 and strict TypeScript
+- NestJS API
+- React 19 and Vite dashboard
+- Independent Node.js monitoring agent
+- Prisma and PostgreSQL
+- Jest and Vitest
+- pnpm workspaces
+- Docker Compose
+- GitHub Actions
+
+## Requirements
+
+- Node.js 24 or newer
+- pnpm 11 or newer
+- Docker with Compose support for local PostgreSQL
+
+## Local installation
+
+```bash
+git clone <repository-url>
+cd nexus-monitor
+pnpm install
+```
+
+Copy `.env.example` to `.env`, then replace the example local database password in both `POSTGRES_PASSWORD` and `DATABASE_URL`.
+
+```bash
+docker compose up -d postgres
+pnpm prisma:validate
+pnpm prisma:generate
+```
+
+## Development
+
+Run all development processes:
+
+```bash
+pnpm dev
+```
+
+Or run a single boundary:
+
+```bash
+pnpm --filter @nexus-monitor/api dev
+pnpm --filter @nexus-monitor/web dev
+pnpm --filter @nexus-monitor/agent dev
+```
+
+The agent requires `AGENT_ID` and `NEXUS_API_URL` in its environment. During Phase 0 it validates configuration and reports readiness locally. It does not collect or transmit machine data.
+
+## Quality commands
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm prisma:format
+pnpm prisma:validate
+pnpm prisma:generate
+```
+
+## Repository structure
+
+```text
+apps/
+  agent/       Independent monitoring agent runtime
+  api/         NestJS API and future realtime boundary
+  web/         React dashboard
+packages/
+  contracts/   Framework-neutral shared contracts
+prisma/        PostgreSQL schema and generated client target
+docs/
+  reports/     Completed phase reports
+  superpowers/ Approved designs and implementation plans
+.github/       CI, dependency updates, and contribution templates
+```
+
+## Roadmap
+
+- Phase 0: repository and runtime foundation
+- Phase 1: host registration and heartbeat
+- Phase 2: core system metrics
+- Phase 3: realtime dashboard
+- Phase 4: historical metrics and charts
+- Phase 5: alerting
+- Phase 6: processes and system events
+- Phase 7: production hardening
+- Phase 8: public release polish
+
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for phase goals and exit criteria.
+
+## Contributing and security
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change. Follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
+## License
+
+NEXUS Monitor is available under the [MIT License](LICENSE).
