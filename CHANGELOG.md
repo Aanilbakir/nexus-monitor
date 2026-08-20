@@ -14,3 +14,4 @@ All notable changes to NEXUS Monitor are documented in this file. The format fol
 - Prisma 7 and PostgreSQL 17 development infrastructure.
 - GitHub Actions, Dependabot, issue forms, pull request template, and public project policies.
 - Phase design, implementation plan, roadmap, and contributor documentation.
+- Evidence-backed Phase 0 verification report.
