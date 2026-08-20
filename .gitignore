@@ -10,4 +10,4 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
-prisma/generated/
+packages/database/src/generated/

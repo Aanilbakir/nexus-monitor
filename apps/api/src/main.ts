@@ -10,6 +10,8 @@ async function bootstrap(): Promise<void> {
   const environment = readApiEnvironment(process.env);
   const app = await NestFactory.create(AppModule);
 
+  app.setGlobalPrefix('api/v1');
+
   app.useGlobalPipes(
     new ValidationPipe({
       forbidNonWhitelisted: true,

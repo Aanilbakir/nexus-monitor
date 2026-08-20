@@ -1,4 +1,6 @@
 export interface ApiEnvironment {
+  readonly agentEnrollmentToken: string;
+  readonly databaseUrl: string;
   readonly host: string;
   readonly nodeEnv: string;
   readonly port: number;
@@ -16,9 +18,30 @@ export function readApiEnvironment(
     );
   }
 
+  const agentEnrollmentToken = readRequired(
+    source,
+    'AGENT_ENROLLMENT_TOKEN',
+  );
+  const databaseUrl = readRequired(source, 'DATABASE_URL');
+
   return {
+    agentEnrollmentToken,
+    databaseUrl,
     host: source.API_HOST ?? '127.0.0.1',
     nodeEnv: source.NODE_ENV ?? 'development',
     port,
   };
+}
+
+function readRequired(
+  source: Readonly<Record<string, string | undefined>>,
+  key: string,
+): string {
+  const value = source[key]?.trim();
+
+  if (!value) {
+    throw new Error(`Invalid ${key}: expected a non-empty value.`);
+  }
+
+  return value;
 }
