@@ -16,3 +16,13 @@ export {
   type HostAvailability,
   type HostMetadata,
 } from './agent.js';
+
+export {
+  createMetricIngestResponse,
+  MAX_FUTURE_SKEW_MILLISECONDS,
+  METRICS_INTERVAL_SECONDS,
+  validateSystemMetricSample,
+  type MetricSampleValidation,
+  type SystemMetricIngestResponse,
+  type SystemMetricSample,
+} from './system-metrics.js';
