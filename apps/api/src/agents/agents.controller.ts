@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Headers,
@@ -11,6 +12,7 @@ import {
 import type {
   AgentHeartbeatResponse,
   AgentRegistrationResponse,
+  SystemMetricIngestResponse,
 } from '@nexus-monitor/contracts';
 
 import {
@@ -19,11 +21,19 @@ import {
 } from './domain/agent.service.js';
 import { AgentHeartbeatDto } from './dto/agent-heartbeat.dto.js';
 import { AgentRegistrationDto } from './dto/agent-registration.dto.js';
+import {
+  InvalidMetricSampleError,
+  MetricService,
+} from './domain/metric.service.js';
+import { SystemMetricSampleDto } from './dto/system-metric-sample.dto.js';
 import { parseBearerToken } from './transport.js';
 
 @Controller('agents')
 export class AgentsController {
-  public constructor(private readonly agents: AgentService) {}
+  public constructor(
+    private readonly agents: AgentService,
+    private readonly metricService: MetricService,
+  ) {}
 
   @Post('register')
   public async register(
@@ -54,6 +64,27 @@ export class AgentsController {
         request,
       );
     } catch (error) {
+      this.rethrowAuthenticationFailure(error);
+    }
+  }
+
+  @Post(':agentId/metrics')
+  @HttpCode(200)
+  public async metrics(
+    @Param('agentId', new ParseUUIDPipe({ version: '4' })) agentId: string,
+    @Headers('authorization') authorization: string | undefined,
+    @Body() request: SystemMetricSampleDto,
+  ): Promise<SystemMetricIngestResponse> {
+    try {
+      return await this.metricService.ingest(
+        agentId,
+        parseBearerToken(authorization),
+        request,
+      );
+    } catch (error) {
+      if (error instanceof InvalidMetricSampleError) {
+        throw new BadRequestException('System metric sample is invalid.');
+      }
       this.rethrowAuthenticationFailure(error);
     }
   }
