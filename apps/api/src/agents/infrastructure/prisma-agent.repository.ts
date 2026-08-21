@@ -54,8 +54,8 @@ export class PrismaAgentRepository implements AgentRepository {
     return agent?.credentialHash ?? null;
   }
 
-  public async recordHeartbeat(input: RecordHeartbeatInput): Promise<void> {
-    await this.prisma.$transaction(async (transaction) => {
+  public async recordHeartbeat(input: RecordHeartbeatInput): Promise<string> {
+    return this.prisma.$transaction(async (transaction) => {
       const agent = await transaction.agent.update({
         where: { id: input.agentId },
         data: { lastSeenAt: input.receivedAt },
@@ -77,6 +77,8 @@ export class PrismaAgentRepository implements AgentRepository {
           receivedAt: input.receivedAt,
         },
       });
+
+      return agent.hostId;
     });
   }
 }

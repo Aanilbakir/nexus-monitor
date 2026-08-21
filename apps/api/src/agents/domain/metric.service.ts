@@ -9,6 +9,12 @@ import type {
 
 import { UnauthorizedAgentError, type Clock } from './agent.service.js';
 import type { CredentialService } from './credential.service.js';
+import { DashboardEventPublisher } from '../../dashboard/domain/dashboard-event.publisher.js';
+
+export interface AgentMetricIdentity {
+  readonly credentialHash: string;
+  readonly hostId: string;
+}
 
 export interface InsertMetricInput {
   readonly agentId: string;
@@ -26,7 +32,7 @@ export interface InsertMetricInput {
 }
 
 export interface MetricRepository {
-  findCredentialHash(agentId: string): Promise<string | null>;
+  findAgentIdentity(agentId: string): Promise<AgentMetricIdentity | null>;
   insert(input: InsertMetricInput): Promise<'duplicate' | 'inserted'>;
 }
 
@@ -42,6 +48,7 @@ export class MetricService {
     private readonly repository: MetricRepository,
     private readonly credentials: CredentialService,
     private readonly clock: Clock = () => new Date(),
+    private readonly dashboardEvents = new DashboardEventPublisher(),
   ) {}
 
   public async ingest(
@@ -49,10 +56,10 @@ export class MetricService {
     agentToken: string,
     sample: SystemMetricSample,
   ): Promise<SystemMetricIngestResponse> {
-    const credentialHash = await this.repository.findCredentialHash(agentId);
+    const identity = await this.repository.findAgentIdentity(agentId);
     if (
-      !credentialHash ||
-      !this.credentials.verifyAgentToken(agentToken, credentialHash)
+      !identity ||
+      !this.credentials.verifyAgentToken(agentToken, identity.credentialHash)
     ) {
       throw new UnauthorizedAgentError();
     }
@@ -62,7 +69,7 @@ export class MetricService {
       throw new InvalidMetricSampleError();
     }
 
-    await this.repository.insert({
+    const insertResult = await this.repository.insert({
       agentId,
       collectedAt: new Date(sample.collectedAt),
       cpuPercent: sample.cpuPercent,
@@ -76,6 +83,27 @@ export class MetricService {
       receivedAt,
       uptimeSeconds: BigInt(sample.uptimeSeconds),
     });
+
+    if (insertResult === 'inserted') {
+      this.dashboardEvents.publish({
+        hostId: identity.hostId,
+        occurredAt: receivedAt.toISOString(),
+        payload: {
+          collectedAt: sample.collectedAt,
+          cpuPercent: sample.cpuPercent,
+          diskFreeBytes: String(sample.diskFreeBytes),
+          diskTotalBytes: String(sample.diskTotalBytes),
+          diskUsedBytes: String(sample.diskUsedBytes),
+          memoryTotalBytes: String(sample.memoryTotalBytes),
+          memoryUsedBytes: String(sample.memoryUsedBytes),
+          networkReceivedBytes: String(sample.networkReceivedBytes),
+          networkTransmittedBytes: String(sample.networkTransmittedBytes),
+          uptimeSeconds: String(sample.uptimeSeconds),
+        },
+        type: 'host.metric',
+        version: 1,
+      });
+    }
 
     return createMetricIngestResponse(
       sample.collectedAt,

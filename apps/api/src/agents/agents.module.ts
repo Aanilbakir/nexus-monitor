@@ -11,6 +11,7 @@ import {
 import { PrismaAgentRepository } from './infrastructure/prisma-agent.repository.js';
 import { PrismaMetricRepository } from './infrastructure/prisma-metric.repository.js';
 import { AgentsController } from './agents.controller.js';
+import { DashboardEventPublisher } from '../dashboard/domain/dashboard-event.publisher.js';
 
 export const PRISMA = Symbol('PRISMA');
 const AGENT_REPOSITORY = Symbol('AGENT_REPOSITORY');
@@ -19,8 +20,9 @@ const METRIC_REPOSITORY = Symbol('METRIC_REPOSITORY');
 
 @Module({
   controllers: [AgentsController],
-  exports: [PRISMA],
+  exports: [DashboardEventPublisher, PRISMA],
   providers: [
+    DashboardEventPublisher,
     {
       provide: METRIC_REPOSITORY,
       inject: [PRISMA],
@@ -49,19 +51,23 @@ const METRIC_REPOSITORY = Symbol('METRIC_REPOSITORY');
     },
     {
       provide: AgentService,
-      inject: [AGENT_REPOSITORY, CREDENTIALS],
+      inject: [AGENT_REPOSITORY, CREDENTIALS, DashboardEventPublisher],
       useFactory: (
-        repository: AgentRepository,
-        credentials: CredentialService,
-      ): AgentService => new AgentService(repository, credentials),
+      repository: AgentRepository,
+      credentials: CredentialService,
+      dashboardEvents: DashboardEventPublisher,
+    ): AgentService =>
+      new AgentService(repository, credentials, undefined, dashboardEvents),
     },
     {
       provide: MetricService,
-      inject: [METRIC_REPOSITORY, CREDENTIALS],
+      inject: [METRIC_REPOSITORY, CREDENTIALS, DashboardEventPublisher],
       useFactory: (
-        repository: MetricRepository,
-        credentials: CredentialService,
-      ): MetricService => new MetricService(repository, credentials),
+      repository: MetricRepository,
+      credentials: CredentialService,
+      dashboardEvents: DashboardEventPublisher,
+    ): MetricService =>
+      new MetricService(repository, credentials, undefined, dashboardEvents),
     },
   ],
 })

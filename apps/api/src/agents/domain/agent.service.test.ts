@@ -6,6 +6,7 @@ import {
   UnauthorizedAgentError,
 } from './agent.service.js';
 import { CredentialService } from './credential.service.js';
+import { DashboardEventPublisher } from '../../dashboard/domain/dashboard-event.publisher.js';
 
 const registration: AgentRegistrationRequest = {
   agentId: '11111111-1111-4111-8111-111111111111',
@@ -29,9 +30,9 @@ class InMemoryAgentRepository implements AgentRepository {
     return Promise.resolve(this.credentialHash);
   }
 
-  public recordHeartbeat(input: { readonly receivedAt: Date }): Promise<void> {
+  public recordHeartbeat(input: { readonly receivedAt: Date }): Promise<string> {
     this.heartbeatAt = input.receivedAt;
-    return Promise.resolve();
+    return Promise.resolve(registration.hostId);
   }
 }
 
@@ -87,6 +88,28 @@ describe('AgentService', () => {
 
     expect(response.receivedAt).toBe('2026-08-21T00:00:00.000Z');
     expect(repository.heartbeatAt).toEqual(now);
+  });
+
+  it('publishes the persisted heartbeat as an online host event', async () => {
+    const repository = new InMemoryAgentRepository();
+    const credentials = new CredentialService('enrollment-secret');
+    repository.credentialHash = credentials.hash('agent-secret');
+    const publisher = new DashboardEventPublisher();
+    const events: unknown[] = [];
+    publisher.subscribe((event) => events.push(event));
+    const service = new AgentService(repository, credentials, () => now, publisher);
+
+    await service.heartbeat(registration.agentId, 'agent-secret', registration);
+
+    expect(events).toEqual([
+      {
+        hostId: registration.hostId,
+        occurredAt: now.toISOString(),
+        payload: { availability: 'online', lastSeenAt: now.toISOString() },
+        type: 'host.status',
+        version: 1,
+      },
+    ]);
   });
 
   it('rejects an invalid agent credential', async () => {

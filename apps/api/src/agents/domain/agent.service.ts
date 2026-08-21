@@ -10,6 +10,7 @@ import type {
 } from '@nexus-monitor/contracts';
 
 import type { CredentialService } from './credential.service.js';
+import { DashboardEventPublisher } from '../../dashboard/domain/dashboard-event.publisher.js';
 
 export interface EnrollAgentInput extends AgentRegistrationRequest {
   readonly credentialHash: string;
@@ -24,7 +25,7 @@ export interface RecordHeartbeatInput extends AgentHeartbeatRequest {
 export interface AgentRepository {
   enroll(input: EnrollAgentInput): Promise<void>;
   findCredentialHash(agentId: string): Promise<string | null>;
-  recordHeartbeat(input: RecordHeartbeatInput): Promise<void>;
+  recordHeartbeat(input: RecordHeartbeatInput): Promise<string>;
 }
 
 export class UnauthorizedAgentError extends Error {
@@ -41,6 +42,7 @@ export class AgentService {
     private readonly repository: AgentRepository,
     private readonly credentials: CredentialService,
     private readonly clock: Clock = () => new Date(),
+    private readonly dashboardEvents = new DashboardEventPublisher(),
   ) {}
 
   public async register(
@@ -78,10 +80,21 @@ export class AgentService {
     }
 
     const receivedAt = this.clock();
-    await this.repository.recordHeartbeat({
+    const hostId = await this.repository.recordHeartbeat({
       ...request,
       agentId,
       receivedAt,
+    });
+
+    this.dashboardEvents.publish({
+      hostId,
+      occurredAt: receivedAt.toISOString(),
+      payload: {
+        availability: 'online',
+        lastSeenAt: receivedAt.toISOString(),
+      },
+      type: 'host.status',
+      version: 1,
     });
 
     return createHeartbeatResponse(receivedAt.toISOString());

@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@nexus-monitor/database';
 
 import type {
+  AgentMetricIdentity,
   InsertMetricInput,
   MetricRepository,
 } from '../domain/metric.service.js';
@@ -8,12 +9,14 @@ import type {
 export class PrismaMetricRepository implements MetricRepository {
   public constructor(private readonly prisma: PrismaClient) {}
 
-  public async findCredentialHash(agentId: string): Promise<string | null> {
+  public async findAgentIdentity(
+    agentId: string,
+  ): Promise<AgentMetricIdentity | null> {
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },
-      select: { credentialHash: true },
+      select: { credentialHash: true, hostId: true },
     });
-    return agent?.credentialHash ?? null;
+    return agent ?? null;
   }
 
   public async insert(
