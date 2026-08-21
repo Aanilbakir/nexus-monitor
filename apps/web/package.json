@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@nexus-monitor/contracts": "workspace:*",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
