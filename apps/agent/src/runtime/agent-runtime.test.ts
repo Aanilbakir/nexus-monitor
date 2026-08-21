@@ -44,7 +44,9 @@ describe('AgentRuntime', () => {
       () => identity,
     );
 
-    await runtime.start(metadata, '0.1.0', 'enrollment-secret');
+    await expect(
+      runtime.start(metadata, '0.1.0', 'enrollment-secret'),
+    ).resolves.toEqual({ ...identity, agentToken: 'agent-secret' });
 
     expect(register).toHaveBeenCalledWith(
       identity,

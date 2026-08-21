@@ -4,6 +4,7 @@ import {
 } from '../client/agent-client.js';
 import {
   type AgentIdentity,
+  type AgentState,
   type AgentStateStore,
   createAgentIdentity,
 } from '../identity/agent-state.js';
@@ -48,7 +49,7 @@ export class AgentRuntime {
     metadata: HostMetadata,
     agentVersion: string,
     enrollmentToken: string,
-  ): Promise<void> {
+  ): Promise<AgentState> {
     let state = await this.store.read();
     if (!state) {
       const identity = this.createIdentity();
@@ -74,5 +75,6 @@ export class AgentRuntime {
         this.reportError(error);
       }
     }, HEARTBEAT_INTERVAL_MS);
+    return state;
   }
 }

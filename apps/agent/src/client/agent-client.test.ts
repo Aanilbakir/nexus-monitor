@@ -82,4 +82,50 @@ describe('AgentClient', () => {
       },
     );
   });
+
+  it('sends a system metric sample with the agent token', async () => {
+    const transport = jest
+      .fn<ReturnType<HttpTransport>, Parameters<HttpTransport>>()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            collectedAt: '2026-08-21T09:59:59.000Z',
+            metricsIntervalSeconds: 15,
+            receivedAt: '2026-08-21T10:00:00.000Z',
+          }),
+          { status: 200 },
+        ),
+      );
+    const client = new AgentClient('http://localhost:3000/', transport);
+    const sample = {
+      collectedAt: '2026-08-21T09:59:59.000Z',
+      cpuPercent: 25,
+      diskFreeBytes: 400,
+      diskTotalBytes: 1_000,
+      diskUsedBytes: 500,
+      memoryTotalBytes: 1_000,
+      memoryUsedBytes: 600,
+      networkReceivedBytes: 2_000,
+      networkTransmittedBytes: 1_500,
+      uptimeSeconds: 3_600,
+    };
+
+    await client.sendMetrics(
+      '11111111-1111-4111-8111-111111111111',
+      'agent-secret',
+      sample,
+    );
+
+    expect(transport).toHaveBeenCalledWith(
+      'http://localhost:3000/api/v1/agents/11111111-1111-4111-8111-111111111111/metrics',
+      {
+        body: JSON.stringify(sample),
+        headers: {
+          Authorization: 'Bearer agent-secret',
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      },
+    );
+  });
 });

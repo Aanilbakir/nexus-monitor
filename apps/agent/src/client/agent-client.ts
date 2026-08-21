@@ -1,4 +1,5 @@
 import type { AgentIdentity } from '../identity/agent-state.js';
+import type { SystemMetricSample } from '@nexus-monitor/contracts';
 
 export interface HostMetadata {
   readonly architecture: string;
@@ -57,10 +58,22 @@ export class AgentClient {
     );
   }
 
+  async sendMetrics(
+    agentId: string,
+    agentToken: string,
+    sample: SystemMetricSample,
+  ): Promise<void> {
+    await this.post(
+      `api/v1/agents/${encodeURIComponent(agentId)}/metrics`,
+      agentToken,
+      sample,
+    );
+  }
+
   private async post(
     path: string,
     token: string,
-    body: Record<string, string>,
+    body: object,
   ): Promise<Response> {
     const response = await this.transport(
       new URL(path, this.apiUrl).toString(),
