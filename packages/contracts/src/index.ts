@@ -26,3 +26,12 @@ export {
   type SystemMetricIngestResponse,
   type SystemMetricSample,
 } from './system-metrics.js';
+
+export {
+  DASHBOARD_EVENT_TYPES,
+  isDashboardEvent,
+  type DashboardEvent,
+  type DashboardFleetSnapshot,
+  type DashboardHost,
+  type DashboardMetric,
+} from './dashboard.js';
