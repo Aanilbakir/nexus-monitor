@@ -53,7 +53,7 @@ describe('createChartModel', () => {
     ).toBe(3000);
     expect(
       createChartModel(
-        [{ ...points[0], networkReceivedBytes: '0' }],
+        [{ ...points[0]!, networkReceivedBytes: '0' }],
         [received],
         'bytes',
         720,

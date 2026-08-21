@@ -29,3 +29,6 @@ All notable changes to NEXUS Monitor are documented in this file. The format fol
 - Typed Server-Sent Events for live metric and availability updates.
 - Responsive EN/TR command-console dashboard with deep-linked host selection.
 - Honest connecting, reconnecting, loading, retry, and empty dashboard states.
+- Bounded historical metric queries for 1-hour through 30-day ranges with database-side aggregation.
+- Accessible EN/TR CPU and memory, disk, and network charts with responsive range selection and point inspection.
+- Opt-in representative 30-day PostgreSQL history-query performance verification.

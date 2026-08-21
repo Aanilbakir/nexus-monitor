@@ -3,7 +3,7 @@
 NEXUS Monitor is an open-source system monitoring and observability platform for local and remote machines, services, applications, and infrastructure. It is designed as a serious developer tool with explicit boundaries between collection, ingestion, persistence, realtime delivery, presentation, and alert evaluation.
 
 > [!IMPORTANT]
-> The repository is currently at Phase 3. Agents can enroll, report availability, send machine-wide system metrics, and publish persisted host changes to the live dashboard.
+> The repository is currently implementing Phase 4. Agents can enroll, report availability, send machine-wide system metrics, publish persisted host changes, and query bounded historical ranges for dashboard charts.
 
 ## Screenshots
 
@@ -27,7 +27,7 @@ The agent, API, persistence layer, realtime transport, dashboard, and alert logi
 - CPU, memory, disk, network, uptime, and operating system monitoring
 - Local and remote host status
 - Process and service health visibility
-- Historical metrics and time-range queries
+- Historical metrics with 1-hour, 6-hour, 24-hour, 7-day, and 30-day ranges
 - Realtime dashboard updates
 - Threshold and heartbeat alerts
 - System events and health timelines
@@ -89,9 +89,9 @@ The agent requires `AGENT_ENROLLMENT_TOKEN`, `NEXUS_AGENT_STATE_PATH`, and `NEXU
 
 After priming its CPU baseline, the agent also sends one combined metric sample every 15 seconds. Samples contain machine-wide CPU percentage; total and used memory; total, used, and free fixed-disk bytes; cumulative received and transmitted network bytes; uptime; and collection time. File contents, usernames, IP addresses, and process lists are not collected in Phase 2. Metric collection and heartbeat delivery use independent schedules.
 
-The API exposes `GET /api/v1/health`, `POST /api/v1/agents/register`, `POST /api/v1/agents/:agentId/heartbeat`, `POST /api/v1/agents/:agentId/metrics`, `GET /api/v1/dashboard/hosts`, and `GET /api/v1/dashboard/events`. Enrollment rotates the agent credential; only its SHA-256 hash is stored in PostgreSQL. Metric samples use the same per-agent bearer credential and duplicate timestamps are idempotent.
+The API exposes `GET /api/v1/health`, `POST /api/v1/agents/register`, `POST /api/v1/agents/:agentId/heartbeat`, `POST /api/v1/agents/:agentId/metrics`, `GET /api/v1/dashboard/hosts`, `GET /api/v1/dashboard/hosts/:hostId/history?range=24h`, and `GET /api/v1/dashboard/events`. Supported history ranges are `1h`, `6h`, `24h`, `7d`, and `30d`. Enrollment rotates the agent credential; only its SHA-256 hash is stored in PostgreSQL. Metric samples use the same per-agent bearer credential and duplicate timestamps are idempotent.
 
-The dashboard fetches a persisted fleet snapshot, then consumes Server-Sent Events for metric and availability changes. During local development, Vite proxies `/api` to `http://127.0.0.1:3000`. Production deployments should serve the dashboard and API from the same origin or provide an equivalent reverse proxy. Phase 3 assumes a trusted local or self-hosted network; dashboard authentication is scheduled for production hardening.
+The dashboard fetches a persisted fleet snapshot, consumes Server-Sent Events for metric and availability changes, and loads aggregated history independently for the selected host and range. Historical CPU and memory, disk, and network charts preserve missing intervals as gaps and expose keyboard-accessible point inspection. During local development, Vite proxies `/api` to `http://127.0.0.1:3000`. Production deployments should serve the dashboard and API from the same origin or provide an equivalent reverse proxy. The dashboard assumes a trusted local or self-hosted network; authentication is scheduled for production hardening.
 
 ## Quality commands
 
@@ -128,7 +128,7 @@ docs/
 - Phase 1: host registration and heartbeat (complete)
 - Phase 2: core system metrics (complete)
 - Phase 3: realtime dashboard (complete)
-- Phase 4: historical metrics and charts
+- Phase 4: historical metrics and charts (implementation complete; database performance verification pending)
 - Phase 5: alerting
 - Phase 6: processes and system events
 - Phase 7: production hardening
