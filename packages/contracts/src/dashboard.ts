@@ -114,4 +114,3 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isTimestamp(value: unknown): value is string {
   return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
-

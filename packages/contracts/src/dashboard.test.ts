@@ -62,4 +62,3 @@ describe('isDashboardEvent', () => {
     expect(isDashboardEvent(event)).toBe(false);
   });
 });
-

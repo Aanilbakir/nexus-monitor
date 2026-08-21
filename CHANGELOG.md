@@ -25,3 +25,7 @@ All notable changes to NEXUS Monitor are documented in this file. The format fol
 - Idempotent historical metric persistence with PostgreSQL constraints and query indexes.
 - Independent heartbeat and metric schedules with retry-on-next-cycle behavior.
 - Clean-workspace CI ordering for generated and shared packages.
+- Persisted fleet snapshots with latest host availability and system metrics.
+- Typed Server-Sent Events for live metric and availability updates.
+- Responsive EN/TR command-console dashboard with deep-linked host selection.
+- Honest connecting, reconnecting, loading, retry, and empty dashboard states.

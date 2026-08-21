@@ -25,24 +25,28 @@
 ### Task 1: Browser-safe dashboard contracts
 
 **Files:**
+
 - Create: `packages/contracts/src/dashboard.ts`
 - Create: `packages/contracts/src/dashboard.test.ts`
 - Modify: `packages/contracts/src/index.ts`
 
 **Interfaces:**
+
 - Consumes: `HostAvailability` and system metric field semantics from existing contracts.
 - Produces: `DashboardHost`, `DashboardMetric`, `DashboardFleetSnapshot`, `DashboardEvent`, `DASHBOARD_EVENT_TYPES`, and `isDashboardEvent(value: unknown): value is DashboardEvent`.
 
 - [ ] **Step 1: Write failing contract tests**
 
 ```ts
-expect(isDashboardEvent({
-  version: 1,
-  type: 'host.metric',
-  hostId,
-  occurredAt,
-  payload: metric,
-})).toBe(true);
+expect(
+  isDashboardEvent({
+    version: 1,
+    type: 'host.metric',
+    hostId,
+    occurredAt,
+    payload: metric,
+  }),
+).toBe(true);
 expect(isDashboardEvent({ version: 2, type: 'host.metric' })).toBe(false);
 expect(JSON.stringify(metric)).not.toContain('credential');
 ```
@@ -91,8 +95,23 @@ export const DASHBOARD_EVENT_TYPES = {
 } as const;
 
 export type DashboardEvent =
-  | { readonly version: 1; readonly type: 'host.metric'; readonly hostId: string; readonly occurredAt: string; readonly payload: DashboardMetric }
-  | { readonly version: 1; readonly type: 'host.status'; readonly hostId: string; readonly occurredAt: string; readonly payload: { readonly availability: 'online' | 'offline'; readonly lastSeenAt: string | null } };
+  | {
+      readonly version: 1;
+      readonly type: 'host.metric';
+      readonly hostId: string;
+      readonly occurredAt: string;
+      readonly payload: DashboardMetric;
+    }
+  | {
+      readonly version: 1;
+      readonly type: 'host.status';
+      readonly hostId: string;
+      readonly occurredAt: string;
+      readonly payload: {
+        readonly availability: 'online' | 'offline';
+        readonly lastSeenAt: string | null;
+      };
+    };
 ```
 
 - [ ] **Step 4: Run contract tests and build**
@@ -110,12 +129,14 @@ git commit -m "feat: define realtime dashboard contracts"
 ### Task 2: Current fleet query boundary
 
 **Files:**
+
 - Create: `apps/api/src/dashboard/domain/dashboard-query.service.ts`
 - Create: `apps/api/src/dashboard/domain/dashboard-query.service.test.ts`
 - Create: `apps/api/src/dashboard/infrastructure/prisma-dashboard.repository.ts`
 - Create: `apps/api/src/dashboard/infrastructure/prisma-dashboard.repository.test.ts`
 
 **Interfaces:**
+
 - Consumes: Prisma `Host`, `Agent`, and newest `SystemMetricSample`; existing `deriveAvailability(lastSeenAt, now)` policy.
 - Produces: `DashboardRepository.listCurrentHosts()`, `DashboardRepository.findCurrentHost(hostId)`, `DashboardQueryService.listHosts()`, and `DashboardQueryService.getHost(hostId)`.
 
@@ -177,6 +198,7 @@ git commit -m "feat: query current dashboard host state"
 ### Task 3: Dashboard REST endpoints
 
 **Files:**
+
 - Create: `apps/api/src/dashboard/dashboard.controller.ts`
 - Create: `apps/api/src/dashboard/dashboard.controller.test.ts`
 - Create: `apps/api/src/dashboard/dashboard.module.ts`
@@ -184,6 +206,7 @@ git commit -m "feat: query current dashboard host state"
 - Modify: `apps/api/src/agents/agents.module.ts`
 
 **Interfaces:**
+
 - Consumes: `DashboardQueryService.listHosts()` and `getHost(hostId)`.
 - Produces: `GET /api/v1/dashboard/hosts` and `GET /api/v1/dashboard/hosts/:hostId`.
 
@@ -226,6 +249,7 @@ git commit -m "feat: expose dashboard host snapshots"
 ### Task 4: Persisted-change event publication
 
 **Files:**
+
 - Create: `apps/api/src/dashboard/domain/dashboard-event.publisher.ts`
 - Create: `apps/api/src/dashboard/domain/dashboard-event.publisher.test.ts`
 - Modify: `apps/api/src/agents/domain/agent.service.ts`
@@ -235,6 +259,7 @@ git commit -m "feat: expose dashboard host snapshots"
 - Modify: `apps/api/src/agents/agents.module.ts`
 
 **Interfaces:**
+
 - Consumes: successful heartbeat persistence and metric repository result `'inserted' | 'duplicate'`.
 - Produces: `DashboardEventPublisher.publish(event)`, `subscribe(listener): () => void`, and persisted-change events.
 
@@ -247,7 +272,9 @@ expect(listener).toHaveBeenCalledWith(event);
 unsubscribe();
 
 await metricService.ingest(agentId, token, sample);
-expect(publisher.publish).toHaveBeenCalledWith(expect.objectContaining({ type: 'host.metric' }));
+expect(publisher.publish).toHaveBeenCalledWith(
+  expect.objectContaining({ type: 'host.metric' }),
+);
 ```
 
 Also assert authentication failure, persistence failure, and duplicate metric ingestion publish nothing.
@@ -285,6 +312,7 @@ git commit -m "feat: publish persisted dashboard changes"
 ### Task 5: SSE stream and offline transitions
 
 **Files:**
+
 - Create: `apps/api/src/dashboard/dashboard-events.controller.ts`
 - Create: `apps/api/src/dashboard/dashboard-events.controller.test.ts`
 - Create: `apps/api/src/dashboard/domain/availability-monitor.ts`
@@ -292,6 +320,7 @@ git commit -m "feat: publish persisted dashboard changes"
 - Modify: `apps/api/src/dashboard/dashboard.module.ts`
 
 **Interfaces:**
+
 - Consumes: `DashboardEventPublisher`, `DashboardRepository`, existing offline policy.
 - Produces: `GET /api/v1/dashboard/events`, keepalive comments, and exactly-once in-process offline transition publication.
 
@@ -335,6 +364,7 @@ git commit -m "feat: stream realtime dashboard updates"
 ### Task 6: Frontend data, realtime, routing, and localization
 
 **Files:**
+
 - Create: `apps/web/src/dashboard/api.ts`
 - Create: `apps/web/src/dashboard/api.test.ts`
 - Create: `apps/web/src/dashboard/realtime.ts`
@@ -348,6 +378,7 @@ git commit -m "feat: stream realtime dashboard updates"
 - Create: `apps/web/src/i18n/language.test.ts`
 
 **Interfaces:**
+
 - Consumes: shared dashboard contracts, `/api/v1/dashboard/hosts`, `/api/v1/dashboard/events`, browser locale and localStorage.
 - Produces: `fetchFleetSnapshot(signal)`, `openDashboardEvents(handlers)`, `reduceFleet(state, action)`, `readHostRoute(pathname)`, `navigateToHost(hostId)`, `detectLanguage()`, `loadLanguage()`, and `saveLanguage(language)`.
 
@@ -355,8 +386,13 @@ git commit -m "feat: stream realtime dashboard updates"
 
 ```ts
 await expect(fetchFleetSnapshot(signal)).resolves.toEqual(snapshot);
-expect(reduceFleet(state, { type: 'event', event: metricEvent }).hosts[0]?.latestMetric).toEqual(metric);
-expect(reduceFleet(state, { type: 'event', event: unknownHostEvent })).toEqual(state);
+expect(
+  reduceFleet(state, { type: 'event', event: metricEvent }).hosts[0]
+    ?.latestMetric,
+).toEqual(metric);
+expect(reduceFleet(state, { type: 'event', event: unknownHostEvent })).toEqual(
+  state,
+);
 ```
 
 - [ ] **Step 2: Implement fetch and immutable per-host reconciliation**
@@ -392,6 +428,7 @@ git commit -m "feat: manage live bilingual fleet state"
 ### Task 7: Command-console dashboard interface
 
 **Files:**
+
 - Create: `apps/web/src/dashboard/use-dashboard.ts`
 - Create: `apps/web/src/dashboard/use-dashboard.test.tsx`
 - Create: `apps/web/src/components/app-shell.tsx`
@@ -407,6 +444,7 @@ git commit -m "feat: manage live bilingual fleet state"
 - Modify: `apps/web/src/styles.css`
 
 **Interfaces:**
+
 - Consumes: fleet state modules, focused History API routing module, localized message dictionaries.
 - Produces: responsive `/` and `/hosts/:hostId` UI with truthful connection and data states.
 
@@ -415,7 +453,9 @@ git commit -m "feat: manage live bilingual fleet state"
 Test initial loading, fleet totals, search, host selection, canonical navigation, direct detail route, missing host, empty fleet, request retry, missing metrics, reconnecting/live state, EN/TR switching and persistence.
 
 ```tsx
-expect(await screen.findByRole('heading', { name: 'web-prod-01' })).toBeVisible();
+expect(
+  await screen.findByRole('heading', { name: 'web-prod-01' }),
+).toBeVisible();
 await user.click(screen.getByRole('button', { name: 'Türkçe' }));
 expect(screen.getByText('Çevrimiçi')).toBeVisible();
 expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('tr');
@@ -435,7 +475,10 @@ The hook performs initial snapshot load, opens EventSource only after success, m
 ```ts
 export function formatBytes(value: string, language: Language): string;
 export function formatDuration(seconds: string, messages: Messages): string;
-export function formatTimestamp(value: string | null, language: Language): string;
+export function formatTimestamp(
+  value: string | null,
+  language: Language,
+): string;
 export function formatPercent(value: number): string;
 ```
 
@@ -460,6 +503,7 @@ git commit -m "feat: build realtime command console dashboard"
 ### Task 8: Integration, documentation, and Phase 3 verification
 
 **Files:**
+
 - Modify: `apps/web/vite.config.ts`
 - Modify: `.env.example`
 - Modify: `README.md`
@@ -469,6 +513,7 @@ git commit -m "feat: build realtime command console dashboard"
 - Test: existing and new repository test suites
 
 **Interfaces:**
+
 - Consumes: complete dashboard API, SSE stream, and React application.
 - Produces: documented local development flow and verified Phase 3 report.
 

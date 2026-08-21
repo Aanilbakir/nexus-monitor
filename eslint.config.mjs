@@ -9,6 +9,8 @@ export default tseslint.config(
       '**/dist/**',
       '**/*.cjs',
       '**/node_modules/**',
+      '**/node_modules.incomplete/**',
+      '.superpowers/**',
       'eslint.config.mjs',
       'prisma/generated/**',
       'packages/database/src/generated/**',

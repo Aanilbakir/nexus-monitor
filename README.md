@@ -3,18 +3,18 @@
 NEXUS Monitor is an open-source system monitoring and observability platform for local and remote machines, services, applications, and infrastructure. It is designed as a serious developer tool with explicit boundaries between collection, ingestion, persistence, realtime delivery, presentation, and alert evaluation.
 
 > [!IMPORTANT]
-> The repository is currently at Phase 2. Agents can enroll, report availability, and send machine-wide system metrics. The live dashboard arrives in Phase 3, and the interface does not present simulated monitoring data as a finished feature.
+> The repository is currently at Phase 3. Agents can enroll, report availability, send machine-wide system metrics, and publish persisted host changes to the live dashboard.
 
 ## Screenshots
 
-Screenshots will be added when the realtime dashboard is implemented in Phase 3.
+The dashboard is a responsive EN/TR command console with a host fleet sidebar, honest connection state, and current system telemetry. Repository screenshots remain part of the Phase 8 public-release polish.
 
 ## Architecture
 
 ```text
 Monitoring Agent  ->  NestJS API  ->  PostgreSQL
                            |
-                           +------> Realtime transport (Phase 3)
+                           +------> REST snapshot + SSE
                                       |
                                       v
                                 React dashboard
@@ -89,7 +89,9 @@ The agent requires `AGENT_ENROLLMENT_TOKEN`, `NEXUS_AGENT_STATE_PATH`, and `NEXU
 
 After priming its CPU baseline, the agent also sends one combined metric sample every 15 seconds. Samples contain machine-wide CPU percentage; total and used memory; total, used, and free fixed-disk bytes; cumulative received and transmitted network bytes; uptime; and collection time. File contents, usernames, IP addresses, and process lists are not collected in Phase 2. Metric collection and heartbeat delivery use independent schedules.
 
-The API exposes `GET /api/v1/health`, `POST /api/v1/agents/register`, `POST /api/v1/agents/:agentId/heartbeat`, and `POST /api/v1/agents/:agentId/metrics`. Enrollment rotates the agent credential; only its SHA-256 hash is stored in PostgreSQL. Metric samples use the same per-agent bearer credential and duplicate timestamps are idempotent.
+The API exposes `GET /api/v1/health`, `POST /api/v1/agents/register`, `POST /api/v1/agents/:agentId/heartbeat`, `POST /api/v1/agents/:agentId/metrics`, `GET /api/v1/dashboard/hosts`, and `GET /api/v1/dashboard/events`. Enrollment rotates the agent credential; only its SHA-256 hash is stored in PostgreSQL. Metric samples use the same per-agent bearer credential and duplicate timestamps are idempotent.
+
+The dashboard fetches a persisted fleet snapshot, then consumes Server-Sent Events for metric and availability changes. During local development, Vite proxies `/api` to `http://127.0.0.1:3000`. Production deployments should serve the dashboard and API from the same origin or provide an equivalent reverse proxy. Phase 3 assumes a trusted local or self-hosted network; dashboard authentication is scheduled for production hardening.
 
 ## Quality commands
 
@@ -109,7 +111,7 @@ pnpm prisma:generate
 ```text
 apps/
   agent/       Independent monitoring agent runtime
-  api/         NestJS API and future realtime boundary
+  api/         NestJS API and realtime boundary
   web/         React dashboard
 packages/
   contracts/   Framework-neutral shared contracts
@@ -125,7 +127,7 @@ docs/
 - Phase 0: repository and runtime foundation (complete)
 - Phase 1: host registration and heartbeat (complete)
 - Phase 2: core system metrics (complete)
-- Phase 3: realtime dashboard
+- Phase 3: realtime dashboard (complete)
 - Phase 4: historical metrics and charts
 - Phase 5: alerting
 - Phase 6: processes and system events

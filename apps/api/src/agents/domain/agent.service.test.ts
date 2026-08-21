@@ -30,7 +30,9 @@ class InMemoryAgentRepository implements AgentRepository {
     return Promise.resolve(this.credentialHash);
   }
 
-  public recordHeartbeat(input: { readonly receivedAt: Date }): Promise<string> {
+  public recordHeartbeat(input: {
+    readonly receivedAt: Date;
+  }): Promise<string> {
     this.heartbeatAt = input.receivedAt;
     return Promise.resolve(registration.hostId);
   }
@@ -97,7 +99,12 @@ describe('AgentService', () => {
     const publisher = new DashboardEventPublisher();
     const events: unknown[] = [];
     publisher.subscribe((event) => events.push(event));
-    const service = new AgentService(repository, credentials, () => now, publisher);
+    const service = new AgentService(
+      repository,
+      credentials,
+      () => now,
+      publisher,
+    );
 
     await service.heartbeat(registration.agentId, 'agent-secret', registration);
 

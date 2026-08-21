@@ -32,6 +32,8 @@ Development advances one explicitly approved phase at a time. A phase is complet
 
 **Exit criteria:** The host list and detail view update without refresh, disconnected states are honest, and accessible loading/error/empty states are present.
 
+**Status:** Complete. A persisted REST snapshot, typed Server-Sent Events, reconnect reconciliation, deep-linked host selection, responsive EN/TR presentation, and accessible loading, error, and empty states are implemented and covered by automated and browser tests.
+
 ## Phase 4: Historical metrics and charts
 
 **Goal:** Query, aggregate, and visualize metrics over selectable time ranges.

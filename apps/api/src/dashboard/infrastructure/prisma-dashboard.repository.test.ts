@@ -54,16 +54,37 @@ describe('PrismaDashboardRepository', () => {
 
     expect(findMany).toHaveBeenCalledWith({
       orderBy: { hostname: 'asc' },
-      select: expect.objectContaining({
+      select: {
+        agents: {
+          orderBy: [{ lastSeenAt: 'desc' }, { enrolledAt: 'desc' }],
+          select: {
+            id: true,
+            lastSeenAt: true,
+            metricSamples: {
+              orderBy: { collectedAt: 'desc' },
+              select: {
+                collectedAt: true,
+                cpuPercent: true,
+                diskFreeBytes: true,
+                diskTotalBytes: true,
+                diskUsedBytes: true,
+                memoryTotalBytes: true,
+                memoryUsedBytes: true,
+                networkReceivedBytes: true,
+                networkTransmittedBytes: true,
+                uptimeSeconds: true,
+              },
+              take: 1,
+            },
+            version: true,
+          },
+          take: 1,
+        },
+        architecture: true,
         id: true,
         hostname: true,
         platform: true,
-        architecture: true,
-        agents: expect.objectContaining({
-          orderBy: [{ lastSeenAt: 'desc' }, { enrolledAt: 'desc' }],
-          take: 1,
-        }),
-      }),
+      },
     });
     expect(JSON.stringify(findMany.mock.calls[0])).not.toContain(
       'credentialHash',
@@ -72,7 +93,9 @@ describe('PrismaDashboardRepository', () => {
 
   it('omits hosts that have no enrolled agent', async () => {
     const prisma = {
-      host: { findMany: jest.fn().mockResolvedValue([{ ...host, agents: [] }]) },
+      host: {
+        findMany: jest.fn().mockResolvedValue([{ ...host, agents: [] }]),
+      },
     } as unknown as PrismaClient;
 
     await expect(
@@ -98,4 +121,3 @@ describe('PrismaDashboardRepository', () => {
     );
   });
 });
-

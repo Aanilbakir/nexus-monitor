@@ -7,8 +7,7 @@ export class DashboardEventPublisher {
   private readonly listeners = new Set<DashboardEventListener>();
 
   public constructor(
-    private readonly onListenerError: DashboardListenerErrorHandler =
-      defaultListenerErrorHandler,
+    private readonly onListenerError: DashboardListenerErrorHandler = defaultListenerErrorHandler,
   ) {}
 
   public publish(event: DashboardEvent): void {
@@ -32,4 +31,3 @@ export class DashboardEventPublisher {
 function defaultListenerErrorHandler(error: unknown): void {
   console.error('Dashboard event subscriber failed.', error);
 }
-

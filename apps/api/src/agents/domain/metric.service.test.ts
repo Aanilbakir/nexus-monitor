@@ -32,7 +32,9 @@ class InMemoryMetricRepository implements MetricRepository {
 
   public findAgentIdentity() {
     return Promise.resolve(
-      this.credentialHash ? { credentialHash: this.credentialHash, hostId } : null,
+      this.credentialHash
+        ? { credentialHash: this.credentialHash, hostId }
+        : null,
     );
   }
 
@@ -104,7 +106,12 @@ describe('MetricService', () => {
     const publisher = new DashboardEventPublisher();
     const events: unknown[] = [];
     publisher.subscribe((event) => events.push(event));
-    const service = new MetricService(repository, credentials, () => now, publisher);
+    const service = new MetricService(
+      repository,
+      credentials,
+      () => now,
+      publisher,
+    );
 
     await service.ingest(agentId, 'agent-secret', sample);
     repository.duplicate = true;

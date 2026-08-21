@@ -1,5 +1,7 @@
 coverage
 dist
 node_modules
+node_modules.incomplete
+.superpowers
 pnpm-lock.yaml
 packages/database/src/generated

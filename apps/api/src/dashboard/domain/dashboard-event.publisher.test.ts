@@ -41,4 +41,3 @@ describe('DashboardEventPublisher', () => {
     expect(listenerError).toHaveBeenCalledWith(new Error('stream closed'));
   });
 });
-

@@ -37,7 +37,9 @@ describe('AvailabilityMonitor', () => {
       },
     ];
     const queries = {
-      listHosts: jest.fn().mockImplementation(() => Promise.resolve(snapshots.shift())),
+      listHosts: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(snapshots.shift())),
     } as unknown as DashboardQueryService;
     const publisher = new DashboardEventPublisher();
     const events: unknown[] = [];
@@ -70,7 +72,9 @@ describe('AvailabilityMonitor', () => {
     };
     const snapshots = [online, offline, online, offline];
     const queries = {
-      listHosts: jest.fn().mockImplementation(() => Promise.resolve(snapshots.shift())),
+      listHosts: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(snapshots.shift())),
     } as unknown as DashboardQueryService;
     const publisher = new DashboardEventPublisher();
     const events: unknown[] = [];
@@ -85,4 +89,3 @@ describe('AvailabilityMonitor', () => {
     expect(events).toHaveLength(2);
   });
 });
-

@@ -29,9 +29,9 @@ describe('DashboardController', () => {
       listHosts: () => Promise.resolve(snapshot),
     } as unknown as DashboardQueryService;
 
-    await expect(
-      new DashboardController(queries).listHosts(),
-    ).resolves.toEqual(snapshot);
+    await expect(new DashboardController(queries).listHosts()).resolves.toEqual(
+      snapshot,
+    );
   });
 
   it('returns one current host', async () => {
@@ -54,4 +54,3 @@ describe('DashboardController', () => {
     ).rejects.toEqual(new NotFoundException('Host not found.'));
   });
 });
-

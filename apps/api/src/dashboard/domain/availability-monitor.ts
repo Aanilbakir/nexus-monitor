@@ -1,7 +1,7 @@
 import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 
-import { DashboardEventPublisher } from './dashboard-event.publisher.js';
-import { DashboardQueryService } from './dashboard-query.service.js';
+import type { DashboardEventPublisher } from './dashboard-event.publisher.js';
+import type { DashboardQueryService } from './dashboard-query.service.js';
 
 const CHECK_INTERVAL_MILLISECONDS = 5_000;
 
@@ -47,7 +47,10 @@ export class AvailabilityMonitor implements OnModuleDestroy, OnModuleInit {
     }
 
     void this.runCheck();
-    this.timer = setInterval(() => void this.runCheck(), CHECK_INTERVAL_MILLISECONDS);
+    this.timer = setInterval(
+      () => void this.runCheck(),
+      CHECK_INTERVAL_MILLISECONDS,
+    );
   }
 
   public stop(): void {
@@ -80,4 +83,3 @@ export class AvailabilityMonitor implements OnModuleDestroy, OnModuleInit {
     }
   }
 }
-

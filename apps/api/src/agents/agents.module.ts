@@ -53,21 +53,21 @@ const METRIC_REPOSITORY = Symbol('METRIC_REPOSITORY');
       provide: AgentService,
       inject: [AGENT_REPOSITORY, CREDENTIALS, DashboardEventPublisher],
       useFactory: (
-      repository: AgentRepository,
-      credentials: CredentialService,
-      dashboardEvents: DashboardEventPublisher,
-    ): AgentService =>
-      new AgentService(repository, credentials, undefined, dashboardEvents),
+        repository: AgentRepository,
+        credentials: CredentialService,
+        dashboardEvents: DashboardEventPublisher,
+      ): AgentService =>
+        new AgentService(repository, credentials, undefined, dashboardEvents),
     },
     {
       provide: MetricService,
       inject: [METRIC_REPOSITORY, CREDENTIALS, DashboardEventPublisher],
       useFactory: (
-      repository: MetricRepository,
-      credentials: CredentialService,
-      dashboardEvents: DashboardEventPublisher,
-    ): MetricService =>
-      new MetricService(repository, credentials, undefined, dashboardEvents),
+        repository: MetricRepository,
+        credentials: CredentialService,
+        dashboardEvents: DashboardEventPublisher,
+      ): MetricService =>
+        new MetricService(repository, credentials, undefined, dashboardEvents),
     },
   ],
 })
