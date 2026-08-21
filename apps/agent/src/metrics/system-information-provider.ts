@@ -1,4 +1,8 @@
+import { execFile } from 'node:child_process';
+import { statfs } from 'node:fs/promises';
 import { cpus, freemem, totalmem, uptime } from 'node:os';
+import { platform } from 'node:process';
+import { promisify } from 'node:util';
 
 import { fsSize, networkStats } from 'systeminformation';
 
@@ -26,6 +30,7 @@ const REMOTE_OR_VIRTUAL_FILESYSTEMS = new Set([
   'sysfs',
   'tmpfs',
 ]);
+const executeFile = promisify(execFile);
 
 export class SystemInformationProvider implements MetricSource {
   public readCpuTimes(): CpuTimes {
@@ -54,7 +59,12 @@ export class SystemInformationProvider implements MetricSource {
   }
 
   public async readFilesystems(): Promise<readonly FilesystemMetric[]> {
-    return (await fsSize()).map((filesystem) => ({
+    const filesystems = await fsSize();
+    if (filesystems.length === 0 && platform === 'win32') {
+      return readWindowsFixedFilesystems();
+    }
+
+    return filesystems.map((filesystem) => ({
       freeBytes: filesystem.available,
       local: isLocalFilesystem(filesystem.fs, filesystem.type),
       sizeBytes: filesystem.size,
@@ -70,6 +80,56 @@ export class SystemInformationProvider implements MetricSource {
       transmittedBytes: network.tx_bytes,
     }));
   }
+}
+
+export function parseWindowsDriveRoots(output: string): readonly string[] {
+  const roots = [
+    ...new Set(
+      output
+        .split(/\r?\n/u)
+        .map((line) => line.trim())
+        .filter((line) => /^[A-Z]:\\$/iu.test(line)),
+    ),
+  ];
+  if (roots.length === 0) {
+    throw new Error('No fixed Windows drive is available.');
+  }
+  return roots;
+}
+
+async function readWindowsFixedFilesystems(): Promise<
+  readonly FilesystemMetric[]
+> {
+  const command =
+    "[System.IO.DriveInfo]::GetDrives() | Where-Object { $_.DriveType -eq 'Fixed' -and $_.IsReady } | ForEach-Object { $_.RootDirectory.FullName }";
+  const { stdout } = await executeFile(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-Command', command],
+    { encoding: 'utf8', windowsHide: true },
+  );
+
+  return Promise.all(
+    parseWindowsDriveRoots(stdout).map(async (root) => {
+      const statistics = await statfs(root, { bigint: true });
+      const size = statistics.bsize * statistics.blocks;
+      const free = statistics.bsize * statistics.bfree;
+      const available = statistics.bsize * statistics.bavail;
+      return {
+        freeBytes: safeNumber(available),
+        local: true,
+        sizeBytes: safeNumber(size),
+        usedBytes: safeNumber(size - free),
+      };
+    }),
+  );
+}
+
+function safeNumber(value: bigint): number {
+  const result = Number(value);
+  if (!Number.isSafeInteger(result) || result < 0) {
+    throw new Error('Filesystem metric exceeds the safe integer range.');
+  }
+  return result;
 }
 
 function isLocalFilesystem(filesystem: string, type: string): boolean {
