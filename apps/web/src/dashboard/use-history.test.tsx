@@ -23,7 +23,7 @@ function history(
 describe('useHistory', () => {
   it('loads 24 hours by default and aborts the request when the range changes', async () => {
     const signals: AbortSignal[] = [];
-    const loader: FetchHostHistory = vi.fn((_, range, signal) => {
+    const loader = vi.fn<FetchHostHistory>((_, range, signal) => {
       signals.push(signal);
       return Promise.resolve(history(range));
     });
@@ -40,7 +40,7 @@ describe('useHistory', () => {
 
   it('keeps a late previous response from replacing the active range', async () => {
     let resolveDay: (value: DashboardHistoryResponse) => void = () => undefined;
-    const loader: FetchHostHistory = vi.fn((_, range) => {
+    const loader = vi.fn<FetchHostHistory>((_, range) => {
       if (range === '24h') {
         return new Promise((resolve) => {
           resolveDay = resolve;
@@ -52,7 +52,7 @@ describe('useHistory', () => {
 
     act(() => result.current.setRange('1h'));
     await waitFor(() => expect(result.current.data?.range).toBe('1h'));
-    await act(async () => resolveDay(history('24h')));
+    act(() => resolveDay(history('24h')));
     expect(result.current.data?.range).toBe('1h');
   });
 

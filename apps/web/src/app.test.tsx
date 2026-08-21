@@ -1,5 +1,14 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { DashboardFleetSnapshot } from '@nexus-monitor/contracts';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import type {
+  DashboardFleetSnapshot,
+  DashboardHistoryResponse,
+} from '@nexus-monitor/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './app';
@@ -33,6 +42,31 @@ const snapshot: DashboardFleetSnapshot = {
   ],
 };
 
+const history: DashboardHistoryResponse = {
+  bucketSeconds: 900,
+  endAt: '2026-08-21T10:00:00.000Z',
+  hostId: snapshot.hosts[0]!.id,
+  points: [
+    {
+      bucketAt: '2026-08-21T09:45:00.000Z',
+      cpuPercent: 25,
+      diskUsedPercent: 60,
+      memoryUsedPercent: 50,
+      networkReceivedBytes: '2048',
+      networkTransmittedBytes: '1024',
+    },
+  ],
+  range: '24h',
+  startAt: '2026-08-20T10:00:00.000Z',
+};
+
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') {
+    return input;
+  }
+  return input instanceof URL ? input.href : input.url;
+}
+
 class FakeEventSource {
   public static latest: FakeEventSource | null = null;
   private readonly listeners = new Map<string, EventListener>();
@@ -60,6 +94,7 @@ describe('App', () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
     FakeEventSource.latest = null;
   });
@@ -110,6 +145,36 @@ describe('App', () => {
     expect(await screen.findByText('No monitored hosts')).toBeVisible();
     expect(
       screen.getByText('Enroll and connect an agent to begin monitoring.'),
+    ).toBeVisible();
+  });
+
+  it('keeps current telemetry available while host history loads', async () => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
+    let resolveHistory: (response: Response) => void = () => undefined;
+    const fetcher = vi.fn<typeof fetch>((input) => {
+      if (requestUrl(input).includes('/history?')) {
+        return new Promise<Response>((resolve) => {
+          resolveHistory = resolve;
+        });
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify(snapshot), { status: 200 }),
+      );
+    });
+    vi.stubGlobal('fetch', fetcher);
+
+    render(<App />);
+
+    expect(await screen.findByText('24.5%')).toBeVisible();
+    expect(screen.getByText('Loading historical metrics')).toBeVisible();
+    resolveHistory(
+      new Response(JSON.stringify(history), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      }),
+    );
+    expect(
+      await screen.findByRole('figure', { name: 'Utilization' }),
     ).toBeVisible();
   });
 

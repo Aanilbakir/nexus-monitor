@@ -8,6 +8,7 @@ import {
   formatTimestamp,
 } from './format';
 import { MetricReading } from './metric-reading';
+import { HistoryPanel } from './history/history-panel';
 
 export function HostDetail({
   copy,
@@ -103,6 +104,7 @@ export function HostDetail({
           <p className="waiting-metrics">{copy.waitingMetrics}</p>
         )}
       </section>
+      <HistoryPanel copy={copy} hostId={host.id} language={language} />
     </article>
   );
 }
