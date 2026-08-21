@@ -30,6 +30,28 @@ export interface DashboardFleetSnapshot {
   readonly hosts: readonly DashboardHost[];
 }
 
+export const HISTORY_RANGES = ['1h', '6h', '24h', '7d', '30d'] as const;
+
+export type HistoryRange = (typeof HISTORY_RANGES)[number];
+
+export interface DashboardHistoryPoint {
+  readonly bucketAt: string;
+  readonly cpuPercent: number | null;
+  readonly diskUsedPercent: number | null;
+  readonly memoryUsedPercent: number | null;
+  readonly networkReceivedBytes: string;
+  readonly networkTransmittedBytes: string;
+}
+
+export interface DashboardHistoryResponse {
+  readonly bucketSeconds: number;
+  readonly endAt: string;
+  readonly hostId: string;
+  readonly points: readonly DashboardHistoryPoint[];
+  readonly range: HistoryRange;
+  readonly startAt: string;
+}
+
 export const DASHBOARD_EVENT_TYPES = {
   metric: 'host.metric',
   status: 'host.status',
@@ -79,6 +101,68 @@ export function isDashboardEvent(value: unknown): value is DashboardEvent {
   }
 
   return false;
+}
+
+export function isDashboardHistoryResponse(
+  value: unknown,
+): value is DashboardHistoryResponse {
+  if (
+    !isRecord(value) ||
+    typeof value.hostId !== 'string' ||
+    value.hostId.length === 0 ||
+    !isHistoryRange(value.range) ||
+    !Number.isInteger(value.bucketSeconds) ||
+    typeof value.bucketSeconds !== 'number' ||
+    value.bucketSeconds <= 0 ||
+    !isTimestamp(value.startAt) ||
+    !isTimestamp(value.endAt) ||
+    !Array.isArray(value.points)
+  ) {
+    return false;
+  }
+
+  let previousTimestamp = Number.NEGATIVE_INFINITY;
+  for (const point of value.points) {
+    if (!isDashboardHistoryPoint(point)) {
+      return false;
+    }
+
+    const timestamp = Date.parse(point.bucketAt);
+    if (timestamp <= previousTimestamp) {
+      return false;
+    }
+    previousTimestamp = timestamp;
+  }
+
+  return true;
+}
+
+function isDashboardHistoryPoint(
+  value: unknown,
+): value is DashboardHistoryPoint {
+  return (
+    isRecord(value) &&
+    isTimestamp(value.bucketAt) &&
+    isPercentage(value.cpuPercent) &&
+    isPercentage(value.diskUsedPercent) &&
+    isPercentage(value.memoryUsedPercent) &&
+    isCounter(value.networkReceivedBytes) &&
+    isCounter(value.networkTransmittedBytes)
+  );
+}
+
+function isHistoryRange(value: unknown): value is HistoryRange {
+  return HISTORY_RANGES.some((range) => range === value);
+}
+
+function isPercentage(value: unknown): value is number | null {
+  return (
+    value === null ||
+    (typeof value === 'number' &&
+      Number.isFinite(value) &&
+      value >= 0 &&
+      value <= 100)
+  );
 }
 
 function isDashboardMetric(value: Record<string, unknown>): boolean {

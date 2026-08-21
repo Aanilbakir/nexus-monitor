@@ -1,6 +1,9 @@
 import {
+  HISTORY_RANGES,
   isDashboardEvent,
+  isDashboardHistoryResponse,
   type DashboardEvent,
+  type DashboardHistoryResponse,
   type DashboardMetric,
 } from './dashboard.js';
 
@@ -60,5 +63,68 @@ describe('isDashboardEvent', () => {
     },
   ])('rejects malformed event %#', (event) => {
     expect(isDashboardEvent(event)).toBe(false);
+  });
+});
+
+const history: DashboardHistoryResponse = {
+  bucketSeconds: 60,
+  endAt: '2026-08-21T10:00:00.000Z',
+  hostId: 'd35f02d8-9aa8-4f6f-a8f0-079f2f0d05ba',
+  points: [
+    {
+      bucketAt: '2026-08-21T09:58:00.000Z',
+      cpuPercent: 20,
+      diskUsedPercent: 60,
+      memoryUsedPercent: 50,
+      networkReceivedBytes: '1000',
+      networkTransmittedBytes: '500',
+    },
+    {
+      bucketAt: '2026-08-21T09:59:00.000Z',
+      cpuPercent: null,
+      diskUsedPercent: null,
+      memoryUsedPercent: null,
+      networkReceivedBytes: '0',
+      networkTransmittedBytes: '0',
+    },
+  ],
+  range: '1h',
+  startAt: '2026-08-21T09:00:00.000Z',
+};
+
+describe('isDashboardHistoryResponse', () => {
+  it('accepts every supported range in a complete response', () => {
+    for (const range of HISTORY_RANGES) {
+      expect(isDashboardHistoryResponse({ ...history, range })).toBe(true);
+    }
+  });
+
+  it.each([
+    { ...history, range: '90d' },
+    { ...history, bucketSeconds: 0 },
+    { ...history, startAt: 'not-a-date' },
+    { ...history, hostId: '' },
+    {
+      ...history,
+      points: [history.points[1], history.points[0]],
+    },
+    {
+      ...history,
+      points: [{ ...history.points[0], cpuPercent: 101 }],
+    },
+    {
+      ...history,
+      points: [{ ...history.points[0], memoryUsedPercent: -1 }],
+    },
+    {
+      ...history,
+      points: [{ ...history.points[0], networkReceivedBytes: '-1' }],
+    },
+    {
+      ...history,
+      points: [{ ...history.points[0], bucketAt: 'yesterday' }],
+    },
+  ])('rejects malformed history %#', (value) => {
+    expect(isDashboardHistoryResponse(value)).toBe(false);
   });
 });

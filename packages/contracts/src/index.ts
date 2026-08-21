@@ -29,9 +29,14 @@ export {
 
 export {
   DASHBOARD_EVENT_TYPES,
+  HISTORY_RANGES,
   isDashboardEvent,
+  isDashboardHistoryResponse,
   type DashboardEvent,
   type DashboardFleetSnapshot,
+  type DashboardHistoryPoint,
+  type DashboardHistoryResponse,
   type DashboardHost,
   type DashboardMetric,
+  type HistoryRange,
 } from './dashboard.js';
