@@ -12,13 +12,14 @@ import { PrismaAgentRepository } from './infrastructure/prisma-agent.repository.
 import { PrismaMetricRepository } from './infrastructure/prisma-metric.repository.js';
 import { AgentsController } from './agents.controller.js';
 
-const PRISMA = Symbol('PRISMA');
+export const PRISMA = Symbol('PRISMA');
 const AGENT_REPOSITORY = Symbol('AGENT_REPOSITORY');
 const CREDENTIALS = Symbol('CREDENTIALS');
 const METRIC_REPOSITORY = Symbol('METRIC_REPOSITORY');
 
 @Module({
   controllers: [AgentsController],
+  exports: [PRISMA],
   providers: [
     {
       provide: METRIC_REPOSITORY,
