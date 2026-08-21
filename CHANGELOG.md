@@ -20,3 +20,8 @@ All notable changes to NEXUS Monitor are documented in this file. The format fol
 - Stable local agent identity, atomic credential persistence, and 15-second heartbeats.
 - Online/offline availability derived from a 45-second heartbeat threshold.
 - Versioned `/api/v1` agent registration and heartbeat endpoints.
+- Machine-wide CPU, memory, fixed-disk, network, and uptime collection every 15 seconds.
+- Authenticated system metric ingestion with strict numeric and timestamp validation.
+- Idempotent historical metric persistence with PostgreSQL constraints and query indexes.
+- Independent heartbeat and metric schedules with retry-on-next-cycle behavior.
+- Clean-workspace CI ordering for generated and shared packages.

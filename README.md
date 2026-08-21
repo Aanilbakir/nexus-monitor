@@ -3,7 +3,7 @@
 NEXUS Monitor is an open-source system monitoring and observability platform for local and remote machines, services, applications, and infrastructure. It is designed as a serious developer tool with explicit boundaries between collection, ingestion, persistence, realtime delivery, presentation, and alert evaluation.
 
 > [!IMPORTANT]
-> The repository is currently at Phase 1. Agents can enroll and report host availability; system metric collection and the live dashboard arrive in later phases. The interface does not present simulated monitoring data as a finished feature.
+> The repository is currently at Phase 2. Agents can enroll, report availability, and send machine-wide system metrics. The live dashboard arrives in Phase 3, and the interface does not present simulated monitoring data as a finished feature.
 
 ## Screenshots
 
@@ -39,6 +39,7 @@ The agent, API, persistence layer, realtime transport, dashboard, and alert logi
 - NestJS API
 - React 19 and Vite dashboard
 - Independent Node.js monitoring agent
+- Cross-platform system collection through systeminformation
 - Prisma and PostgreSQL
 - Jest and Vitest
 - pnpm workspaces
@@ -86,7 +87,9 @@ pnpm --filter @nexus-monitor/agent dev
 
 The agent requires `AGENT_ENROLLMENT_TOKEN`, `NEXUS_AGENT_STATE_PATH`, and `NEXUS_API_URL`. On first start it creates stable UUIDs, enrolls through `POST /api/v1/agents/register`, stores its issued credential locally, and sends authenticated heartbeats every 15 seconds. The API considers an agent offline after 45 seconds without a heartbeat.
 
-The API exposes `GET /api/v1/health`, `POST /api/v1/agents/register`, and `POST /api/v1/agents/:agentId/heartbeat`. Enrollment rotates the agent credential; only its SHA-256 hash is stored in PostgreSQL.
+After priming its CPU baseline, the agent also sends one combined metric sample every 15 seconds. Samples contain machine-wide CPU percentage; total and used memory; total, used, and free fixed-disk bytes; cumulative received and transmitted network bytes; uptime; and collection time. File contents, usernames, IP addresses, and process lists are not collected in Phase 2. Metric collection and heartbeat delivery use independent schedules.
+
+The API exposes `GET /api/v1/health`, `POST /api/v1/agents/register`, `POST /api/v1/agents/:agentId/heartbeat`, and `POST /api/v1/agents/:agentId/metrics`. Enrollment rotates the agent credential; only its SHA-256 hash is stored in PostgreSQL. Metric samples use the same per-agent bearer credential and duplicate timestamps are idempotent.
 
 ## Quality commands
 
@@ -121,7 +124,7 @@ docs/
 
 - Phase 0: repository and runtime foundation (complete)
 - Phase 1: host registration and heartbeat (complete)
-- Phase 2: core system metrics
+- Phase 2: core system metrics (complete)
 - Phase 3: realtime dashboard
 - Phase 4: historical metrics and charts
 - Phase 5: alerting

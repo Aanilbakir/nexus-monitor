@@ -30,6 +30,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://nexus:ci-only@127.0.0.1:5432/nexus_monitor
         run: pnpm prisma:generate
+      - name: Build shared packages
+        run: pnpm --filter @nexus-monitor/contracts build && pnpm --filter @nexus-monitor/database build
       - name: Check formatting
         run: pnpm format:check
       - name: Lint

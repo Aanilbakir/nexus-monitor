@@ -17,6 +17,8 @@
     "prisma:format": "prisma format",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
+    "pretest": "pnpm --filter @nexus-monitor/contracts build",
+    "pretypecheck": "pnpm --filter @nexus-monitor/contracts build && pnpm --filter @nexus-monitor/database build",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck"
   },

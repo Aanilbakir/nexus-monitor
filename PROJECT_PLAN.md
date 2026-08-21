@@ -24,6 +24,8 @@ Development advances one explicitly approved phase at a time. A phase is complet
 
 **Exit criteria:** Validated samples are stored historically, unsafe or malformed input is rejected, and collection providers are replaceable and tested.
 
+**Status:** Complete. The cross-platform collector, authenticated ingestion route, strict validation, idempotent historical persistence, and independent 15-second metric schedule are implemented and covered by automated tests.
+
 ## Phase 3: Realtime dashboard
 
 **Goal:** Display host state and live metrics through a dedicated realtime transport.
