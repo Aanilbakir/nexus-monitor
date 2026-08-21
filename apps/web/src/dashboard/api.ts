@@ -1,8 +1,11 @@
 import type {
   DashboardFleetSnapshot,
+  DashboardHistoryResponse,
   DashboardHost,
   DashboardMetric,
+  HistoryRange,
 } from '@nexus-monitor/contracts';
+import { isDashboardHistoryResponse } from '@nexus-monitor/contracts';
 
 export class DashboardRequestError extends Error {
   public constructor() {
@@ -22,6 +25,28 @@ export async function fetchFleetSnapshot(
 
   const value: unknown = await response.json();
   if (!isFleetSnapshot(value)) {
+    throw new DashboardRequestError();
+  }
+
+  return value;
+}
+
+export async function fetchHostHistory(
+  hostId: string,
+  range: HistoryRange,
+  signal: AbortSignal,
+  fetcher: typeof fetch = fetch,
+): Promise<DashboardHistoryResponse> {
+  const response = await fetcher(
+    `/api/v1/dashboard/hosts/${encodeURIComponent(hostId)}/history?range=${range}`,
+    { signal },
+  );
+  if (!response.ok) {
+    throw new DashboardRequestError();
+  }
+
+  const value: unknown = await response.json();
+  if (!isDashboardHistoryResponse(value)) {
     throw new DashboardRequestError();
   }
 
