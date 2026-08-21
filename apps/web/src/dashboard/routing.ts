@@ -1,4 +1,5 @@
-const HOST_ROUTE = /^\/hosts\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/?$/i;
+const HOST_ROUTE =
+  /^\/hosts\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/?$/i;
 
 export interface HistoryWriter {
   pushState(data: unknown, unused: string, url?: string | URL | null): void;
@@ -14,4 +15,3 @@ export function navigateToHost(
 ): void {
   historyWriter.pushState(null, '', `/hosts/${encodeURIComponent(hostId)}`);
 }
-

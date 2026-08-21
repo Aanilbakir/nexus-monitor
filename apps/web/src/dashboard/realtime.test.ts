@@ -21,7 +21,10 @@ describe('openDashboardEvents', () => {
     const event = {
       hostId: '11111111-1111-4111-8111-111111111111',
       occurredAt: '2026-08-21T10:00:00.000Z',
-      payload: { availability: 'online', lastSeenAt: '2026-08-21T10:00:00.000Z' },
+      payload: {
+        availability: 'online',
+        lastSeenAt: '2026-08-21T10:00:00.000Z',
+      },
       type: 'host.status',
       version: 1,
     };
@@ -46,4 +49,3 @@ describe('openDashboardEvents', () => {
     expect(source.close).toHaveBeenCalledOnce();
   });
 });
-

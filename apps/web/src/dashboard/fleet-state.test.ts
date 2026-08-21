@@ -1,4 +1,7 @@
-import type { DashboardFleetSnapshot, DashboardHost } from '@nexus-monitor/contracts';
+import type {
+  DashboardFleetSnapshot,
+  DashboardHost,
+} from '@nexus-monitor/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { createFleetState, reduceFleet } from './fleet-state';
@@ -21,14 +24,19 @@ const snapshot: DashboardFleetSnapshot = {
 
 describe('reduceFleet', () => {
   it('replaces state with a reconciled snapshot', () => {
-    expect(reduceFleet(createFleetState(), { type: 'snapshot', snapshot })).toEqual({
+    expect(
+      reduceFleet(createFleetState(), { type: 'snapshot', snapshot }),
+    ).toEqual({
       generatedAt: snapshot.generatedAt,
       hosts: [host],
     });
   });
 
   it('merges a status event into only its known host', () => {
-    const state = reduceFleet(createFleetState(), { type: 'snapshot', snapshot });
+    const state = reduceFleet(createFleetState(), {
+      type: 'snapshot',
+      snapshot,
+    });
     const next = reduceFleet(state, {
       type: 'event',
       event: {
@@ -45,7 +53,10 @@ describe('reduceFleet', () => {
   });
 
   it('ignores events for hosts absent from the reconciled snapshot', () => {
-    const state = reduceFleet(createFleetState(), { type: 'snapshot', snapshot });
+    const state = reduceFleet(createFleetState(), {
+      type: 'snapshot',
+      snapshot,
+    });
     expect(
       reduceFleet(state, {
         type: 'event',
@@ -60,4 +71,3 @@ describe('reduceFleet', () => {
     ).toBe(state);
   });
 });
-

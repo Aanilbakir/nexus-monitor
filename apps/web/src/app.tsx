@@ -1,51 +1,57 @@
-const boundaries = ['Agent', 'API', 'PostgreSQL', 'Dashboard'];
+import { useState } from 'react';
+
+import { AppShell } from './components/app-shell';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from './components/dashboard-states';
+import { HostDetail } from './components/host-detail';
+import { useDashboard } from './dashboard/use-dashboard';
+import { loadLanguage, saveLanguage, type Language } from './i18n/language';
+import { messages } from './i18n/messages';
 
 export function App() {
+  const dashboard = useDashboard();
+  const [language, setLanguage] = useState<Language>(() => loadLanguage());
+  const copy = messages[language];
+
+  const changeLanguage = (nextLanguage: Language): void => {
+    saveLanguage(nextLanguage);
+    setLanguage(nextLanguage);
+  };
+
+  if (dashboard.loadState === 'loading') {
+    return <LoadingState copy={copy} />;
+  }
+
+  if (dashboard.loadState === 'error') {
+    return <ErrorState copy={copy} retry={dashboard.retry} />;
+  }
+
   return (
-    <main className="shell">
-      <header className="topbar">
-        <a
-          className="wordmark"
-          href="#overview"
-          aria-label="NEXUS Monitor home"
-        >
-          <span aria-hidden="true">NX</span>
-          NEXUS Monitor
-        </a>
-        <span className="phase">Phase 0</span>
-      </header>
-
-      <section className="overview" id="overview" aria-labelledby="page-title">
-        <div className="status" role="status">
-          <span className="status-mark" aria-hidden="true" />
-          Foundation online
+    <AppShell
+      connection={dashboard.connection}
+      copy={copy}
+      hosts={dashboard.hosts}
+      language={language}
+      onLanguageChange={changeLanguage}
+      onSelectHost={dashboard.selectHost}
+      selectedHostId={dashboard.selectedHostId}
+    >
+      {dashboard.hosts.length === 0 ? (
+        <EmptyState copy={copy} />
+      ) : dashboard.selectedHost ? (
+        <HostDetail
+          copy={copy}
+          host={dashboard.selectedHost}
+          language={language}
+        />
+      ) : (
+        <div className="state-view">
+          <h1>{copy.selectHost}</h1>
         </div>
-
-        <div className="headline">
-          <p className="kicker">Open-source observability infrastructure</p>
-          <h1 id="page-title">NEXUS Monitor</h1>
-          <p className="summary">
-            The monitoring workspace is ready for host registration and
-            telemetry in the next phase.
-          </p>
-        </div>
-
-        <dl className="boundary-grid" aria-label="System boundaries">
-          {boundaries.map((boundary, index) => (
-            <div className="boundary" key={boundary}>
-              <dt>{boundary}</dt>
-              <dd>{index === 0 ? 'Runtime ready' : 'Boundary ready'}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      <footer>
-        <span>Built for local and distributed infrastructure</span>
-        <a href="https://github.com" rel="noreferrer">
-          Public repository foundation
-        </a>
-      </footer>
-    </main>
+      )}
+    </AppShell>
   );
 }

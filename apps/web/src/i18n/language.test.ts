@@ -25,4 +25,3 @@ describe('dashboard language', () => {
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('tr');
   });
 });
-

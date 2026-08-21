@@ -26,4 +26,3 @@ export function saveLanguage(
 ): void {
   storage.setItem(LANGUAGE_STORAGE_KEY, language);
 }
-

@@ -17,7 +17,10 @@ export function createFleetState(): FleetState {
   return { generatedAt: null, hosts: [] };
 }
 
-export function reduceFleet(state: FleetState, action: FleetAction): FleetState {
+export function reduceFleet(
+  state: FleetState,
+  action: FleetAction,
+): FleetState {
   if (action.type === 'snapshot') {
     return {
       generatedAt: action.snapshot.generatedAt,
@@ -25,7 +28,9 @@ export function reduceFleet(state: FleetState, action: FleetAction): FleetState 
     };
   }
 
-  const index = state.hosts.findIndex((host) => host.id === action.event.hostId);
+  const index = state.hosts.findIndex(
+    (host) => host.id === action.event.hostId,
+  );
   if (index < 0) {
     return state;
   }
@@ -43,4 +48,3 @@ export function reduceFleet(state: FleetState, action: FleetAction): FleetState 
   hosts[index] = updated;
   return { generatedAt: action.event.occurredAt, hosts };
 }
-

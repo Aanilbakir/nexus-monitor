@@ -44,4 +44,3 @@ export function openDashboardEvents(
   source.addEventListener(DASHBOARD_EVENT_TYPES.status, receive);
   return () => source.close();
 }
-

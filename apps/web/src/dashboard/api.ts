@@ -84,4 +84,3 @@ function isString(value: unknown): value is string {
 function isTimestamp(value: unknown): value is string {
   return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
-

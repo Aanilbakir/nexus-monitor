@@ -10,6 +10,7 @@ const snapshot: DashboardFleetSnapshot = {
 
 describe('fetchFleetSnapshot', () => {
   it('returns a valid current snapshot', async () => {
+    const controller = new AbortController();
     const fetcher = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(snapshot), {
         headers: { 'content-type': 'application/json' },
@@ -18,10 +19,10 @@ describe('fetchFleetSnapshot', () => {
     );
 
     await expect(
-      fetchFleetSnapshot(new AbortController().signal, fetcher),
+      fetchFleetSnapshot(controller.signal, fetcher),
     ).resolves.toEqual(snapshot);
     expect(fetcher).toHaveBeenCalledWith('/api/v1/dashboard/hosts', {
-      signal: expect.any(AbortSignal),
+      signal: controller.signal,
     });
   });
 
@@ -39,4 +40,3 @@ describe('fetchFleetSnapshot', () => {
     ).rejects.toBeInstanceOf(DashboardRequestError);
   });
 });
-

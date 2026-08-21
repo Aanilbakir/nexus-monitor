@@ -5,7 +5,10 @@ import { navigateToHost, readHostRoute } from './routing';
 describe('dashboard routing', () => {
   it.each([
     ['/', null],
-    ['/hosts/11111111-1111-4111-8111-111111111111', '11111111-1111-4111-8111-111111111111'],
+    [
+      '/hosts/11111111-1111-4111-8111-111111111111',
+      '11111111-1111-4111-8111-111111111111',
+    ],
     ['/hosts/not-valid', null],
     ['/other', null],
   ])('reads %s', (pathname, expected) => {
@@ -22,4 +25,3 @@ describe('dashboard routing', () => {
     );
   });
 });
-
