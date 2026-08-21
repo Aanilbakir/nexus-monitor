@@ -3,6 +3,9 @@ import type { PrismaClient } from '@nexus-monitor/database';
 
 import { AgentsModule, PRISMA } from '../agents/agents.module.js';
 import { DashboardController } from './dashboard.controller.js';
+import { DashboardEventsController } from './dashboard-events.controller.js';
+import { AvailabilityMonitor } from './domain/availability-monitor.js';
+import { DashboardEventPublisher } from './domain/dashboard-event.publisher.js';
 import {
   DashboardQueryService,
   type DashboardRepository,
@@ -13,7 +16,7 @@ const DASHBOARD_REPOSITORY = Symbol('DASHBOARD_REPOSITORY');
 
 @Module({
   imports: [AgentsModule],
-  controllers: [DashboardController],
+  controllers: [DashboardController, DashboardEventsController],
   providers: [
     {
       provide: DASHBOARD_REPOSITORY,
@@ -27,7 +30,14 @@ const DASHBOARD_REPOSITORY = Symbol('DASHBOARD_REPOSITORY');
       useFactory: (repository: DashboardRepository): DashboardQueryService =>
         new DashboardQueryService(repository),
     },
+    {
+      provide: AvailabilityMonitor,
+      inject: [DashboardQueryService, DashboardEventPublisher],
+      useFactory: (
+        queries: DashboardQueryService,
+        events: DashboardEventPublisher,
+      ): AvailabilityMonitor => new AvailabilityMonitor(queries, events),
+    },
   ],
 })
 export class DashboardModule {}
-
