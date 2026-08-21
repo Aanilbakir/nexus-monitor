@@ -120,4 +120,56 @@ describe('PrismaDashboardRepository', () => {
       expect.objectContaining({ where: { id: host.id } }),
     );
   });
+
+  it('returns mapped history from a bounded parameterized aggregation query', async () => {
+    const queryRaw = jest.fn().mockResolvedValue([
+      {
+        bucketAt: new Date('2026-08-21T09:00:00.000Z'),
+        cpuPercent: '24.5',
+        diskUsedPercent: '60',
+        memoryUsedPercent: null,
+        networkReceivedBytes: 2_000n,
+        networkTransmittedBytes: 1_500n,
+      },
+    ]);
+    const prisma = { $queryRaw: queryRaw } as unknown as PrismaClient;
+    const startAt = new Date('2026-08-21T09:00:00.000Z');
+    const endAt = new Date('2026-08-21T10:00:00.000Z');
+
+    await expect(
+      new PrismaDashboardRepository(prisma).listHistory(
+        '22222222-2222-4222-8222-222222222222',
+        startAt,
+        endAt,
+        60,
+      ),
+    ).resolves.toEqual([
+      {
+        bucketAt: new Date('2026-08-21T09:00:00.000Z'),
+        cpuPercent: 24.5,
+        diskUsedPercent: 60,
+        memoryUsedPercent: null,
+        networkReceivedBytes: 2_000n,
+        networkTransmittedBytes: 1_500n,
+      },
+    ]);
+
+    const [strings, ...values] = queryRaw.mock.calls[0] as [
+      TemplateStringsArray,
+      ...unknown[],
+    ];
+    const sql = strings.join('?');
+    expect(values).toEqual([
+      '22222222-2222-4222-8222-222222222222',
+      startAt,
+      endAt,
+      60,
+      60,
+    ]);
+    expect(sql).toContain('LAG');
+    expect(sql).toContain('GREATEST');
+    expect(sql).toContain('"collectedAt" >=');
+    expect(sql).toContain('"collectedAt" <=');
+    expect(sql).toContain('ORDER BY bucket_at ASC');
+  });
 });

@@ -1,11 +1,14 @@
 import type {
   DashboardFleetSnapshot,
+  DashboardHistoryResponse,
   DashboardHost,
   DashboardMetric,
+  HistoryRange,
 } from '@nexus-monitor/contracts';
 
 import { getHostAvailability } from '../../agents/domain/availability.js';
 import type { Clock } from '../../agents/domain/agent.service.js';
+import { getHistoryPolicy } from './history-range.js';
 
 export interface DashboardMetricRecord {
   readonly collectedAt: Date;
@@ -33,8 +36,23 @@ export interface DashboardHostRecord {
   readonly platform: string;
 }
 
+export interface DashboardHistoryRecord {
+  readonly bucketAt: Date;
+  readonly cpuPercent: number | null;
+  readonly diskUsedPercent: number | null;
+  readonly memoryUsedPercent: number | null;
+  readonly networkReceivedBytes: bigint;
+  readonly networkTransmittedBytes: bigint;
+}
+
 export interface DashboardRepository {
   findCurrentHost(hostId: string): Promise<DashboardHostRecord | null>;
+  listHistory(
+    agentId: string,
+    startAt: Date,
+    endAt: Date,
+    bucketSeconds: number,
+  ): Promise<readonly DashboardHistoryRecord[]>;
   listCurrentHosts(): Promise<readonly DashboardHostRecord[]>;
 }
 
@@ -63,6 +81,45 @@ export class DashboardQueryService {
   public async getHost(hostId: string): Promise<DashboardHost | null> {
     const record = await this.repository.findCurrentHost(hostId);
     return record ? mapHost(record, this.clock()) : null;
+  }
+
+  public async getHistory(
+    hostId: string,
+    range: HistoryRange,
+  ): Promise<DashboardHistoryResponse | null> {
+    const host = await this.repository.findCurrentHost(hostId);
+    if (!host) {
+      return null;
+    }
+
+    const policy = getHistoryPolicy(range);
+    const endAt = this.clock();
+    const startAt = new Date(endAt.getTime() - policy.durationMilliseconds);
+    const records = await this.repository.listHistory(
+      host.agent.id,
+      startAt,
+      endAt,
+      policy.bucketSeconds,
+    );
+    if (records.length > policy.maximumPoints) {
+      throw new Error('Historical metric query exceeded its point limit.');
+    }
+
+    return {
+      bucketSeconds: policy.bucketSeconds,
+      endAt: endAt.toISOString(),
+      hostId,
+      points: records.map((record) => ({
+        bucketAt: record.bucketAt.toISOString(),
+        cpuPercent: record.cpuPercent,
+        diskUsedPercent: record.diskUsedPercent,
+        memoryUsedPercent: record.memoryUsedPercent,
+        networkReceivedBytes: record.networkReceivedBytes.toString(),
+        networkTransmittedBytes: record.networkTransmittedBytes.toString(),
+      })),
+      range,
+      startAt: startAt.toISOString(),
+    };
   }
 }
 

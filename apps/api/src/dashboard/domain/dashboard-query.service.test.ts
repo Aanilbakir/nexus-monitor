@@ -31,6 +31,7 @@ describe('DashboardQueryService', () => {
   it('maps current records to browser-safe values and orders online hosts first', async () => {
     const repository: DashboardRepository = {
       findCurrentHost: jest.fn(),
+      listHistory: jest.fn(),
       listCurrentHosts: jest.fn().mockResolvedValue([
         {
           ...onlineRecord,
@@ -96,6 +97,7 @@ describe('DashboardQueryService', () => {
   it('returns null when a host does not exist', async () => {
     const repository: DashboardRepository = {
       findCurrentHost: jest.fn().mockResolvedValue(null),
+      listHistory: jest.fn(),
       listCurrentHosts: jest.fn(),
     };
 
@@ -104,5 +106,92 @@ describe('DashboardQueryService', () => {
         '55555555-5555-4555-8555-555555555555',
       ),
     ).resolves.toBeNull();
+  });
+
+  it('queries and maps a bounded historical range for the current agent', async () => {
+    const listHistory = jest.fn().mockResolvedValue([
+      {
+        bucketAt: new Date('2026-08-21T09:00:00.000Z'),
+        cpuPercent: 24.5,
+        diskUsedPercent: 60,
+        memoryUsedPercent: 50,
+        networkReceivedBytes: 2_000n,
+        networkTransmittedBytes: 1_500n,
+      },
+    ]);
+    const repository: DashboardRepository = {
+      findCurrentHost: jest.fn().mockResolvedValue(onlineRecord),
+      listCurrentHosts: jest.fn(),
+      listHistory,
+    };
+
+    await expect(
+      new DashboardQueryService(repository, () => now).getHistory(
+        onlineRecord.id,
+        '1h',
+      ),
+    ).resolves.toEqual({
+      bucketSeconds: 60,
+      endAt: '2026-08-21T10:00:00.000Z',
+      hostId: onlineRecord.id,
+      points: [
+        {
+          bucketAt: '2026-08-21T09:00:00.000Z',
+          cpuPercent: 24.5,
+          diskUsedPercent: 60,
+          memoryUsedPercent: 50,
+          networkReceivedBytes: '2000',
+          networkTransmittedBytes: '1500',
+        },
+      ],
+      range: '1h',
+      startAt: '2026-08-21T09:00:00.000Z',
+    });
+    expect(listHistory).toHaveBeenCalledWith(
+      onlineRecord.agent.id,
+      new Date('2026-08-21T09:00:00.000Z'),
+      now,
+      60,
+    );
+  });
+
+  it('does not query metrics when the host does not exist', async () => {
+    const listHistory = jest.fn();
+    const repository: DashboardRepository = {
+      findCurrentHost: jest.fn().mockResolvedValue(null),
+      listCurrentHosts: jest.fn(),
+      listHistory,
+    };
+
+    await expect(
+      new DashboardQueryService(repository, () => now).getHistory(
+        '55555555-5555-4555-8555-555555555555',
+        '24h',
+      ),
+    ).resolves.toBeNull();
+    expect(listHistory).not.toHaveBeenCalled();
+  });
+
+  it('rejects repository output beyond the selected range limit', async () => {
+    const points = Array.from({ length: 98 }, (_, index) => ({
+      bucketAt: new Date(now.getTime() - index * 900_000),
+      cpuPercent: 20,
+      diskUsedPercent: 40,
+      memoryUsedPercent: 30,
+      networkReceivedBytes: 1n,
+      networkTransmittedBytes: 1n,
+    }));
+    const repository: DashboardRepository = {
+      findCurrentHost: jest.fn().mockResolvedValue(onlineRecord),
+      listCurrentHosts: jest.fn(),
+      listHistory: jest.fn().mockResolvedValue(points),
+    };
+
+    await expect(
+      new DashboardQueryService(repository, () => now).getHistory(
+        onlineRecord.id,
+        '24h',
+      ),
+    ).rejects.toThrow('Historical metric query exceeded its point limit.');
   });
 });
