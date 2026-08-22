@@ -16,7 +16,7 @@
     "jest": "29.7.0",
     "ts-jest": "29.4.12",
     "tsx": "4.23.12",
-    "typescript": "5.9.3"
+    "typescript": "6.0.3"
   },
   "dependencies": {
     "@nexus-monitor/contracts": "workspace:*",
