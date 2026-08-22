@@ -3,7 +3,7 @@
 NEXUS Monitor is an open-source system monitoring and observability platform for local and remote machines, services, applications, and infrastructure. It is designed as a serious developer tool with explicit boundaries between collection, ingestion, persistence, realtime delivery, presentation, and alert evaluation.
 
 > [!IMPORTANT]
-> The repository is currently implementing Phase 4. Agents can enroll, report availability, send machine-wide system metrics, publish persisted host changes, and query bounded historical ranges for dashboard charts.
+> The repository is complete through Phase 4. Agents can enroll, report availability, send machine-wide system metrics, publish persisted host changes, and query bounded historical ranges for dashboard charts.
 
 ## Screenshots
 
@@ -128,7 +128,7 @@ docs/
 - Phase 1: host registration and heartbeat (complete)
 - Phase 2: core system metrics (complete)
 - Phase 3: realtime dashboard (complete)
-- Phase 4: historical metrics and charts (implementation complete; database performance verification pending)
+- Phase 4: historical metrics and charts (complete)
 - Phase 5: alerting
 - Phase 6: processes and system events
 - Phase 7: production hardening

@@ -25,7 +25,7 @@ A production web build was exercised in headless Chrome at desktop and mobile vi
 
 An opt-in performance harness inserts 172,800 samples, representing 30 days at 15-second collection intervals. It verifies that the 30-day query returns 120 aggregated points within the 121-point bound and checks the PostgreSQL query plan for index or bitmap usage.
 
-The harness is intentionally excluded from the default suite and runs explicitly through `pnpm exec tsx apps/api/src/dashboard/infrastructure/history-query.performance.ts`. It could not be executed in the current environment because access to the local Docker engine is denied. Phase 4 remains pending on this exit criterion until the representative PostgreSQL run is recorded.
+The harness is intentionally excluded from the default suite and runs explicitly through `pnpm exec tsx apps/api/src/dashboard/infrastructure/history-query.performance.ts`. The representative PostgreSQL run aggregated 172,800 samples into 120 points in 285.21 ms. Its assertions also confirmed the 121-point bound, chronological ordering, and index or bitmap usage in the query plan.
 
 ## Security boundary
 
