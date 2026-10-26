@@ -29,6 +29,7 @@ model Agent {
   host           Host                 @relation(fields: [hostId], references: [id], onDelete: Cascade)
   heartbeats     Heartbeat[]
   metricSamples  SystemMetricSample[]
+  alertInstances AlertInstance[]
 
   @@index([hostId])
   @@index([lastSeenAt])
@@ -62,4 +63,50 @@ model Heartbeat {
   agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@index([agentId, receivedAt(sort: Desc)])
+}
+
+model AlertRule {
+  id              String          @id @db.Uuid
+  name            String          @db.VarChar(255)
+  metric          String          @db.VarChar(32)
+  comparison      String          @db.VarChar(8)
+  threshold       Float
+  durationSeconds Int
+  severity        String          @db.VarChar(16)
+  enabled         Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  instances       AlertInstance[]
+}
+
+model AlertInstance {
+  id             String            @id @db.Uuid
+  ruleId         String            @db.Uuid
+  agentId        String            @db.Uuid
+  dedupeKey      String            @db.VarChar(255)
+  state          String            @db.VarChar(16)
+  openedAt       DateTime          @default(now())
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+  observedValue  Float
+  // Rules with existing alert history cannot be deleted; disable the rule instead.
+  rule           AlertRule         @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  agent          Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  transitions    AlertTransition[]
+
+  // Partial unique index on (dedupeKey) WHERE state <> 'RESOLVED' lives in the migration;
+  // Prisma DSL cannot express a filtered unique index.
+  @@index([agentId, openedAt(sort: Desc)])
+  @@index([ruleId])
+}
+
+model AlertTransition {
+  id              BigInt        @id @default(autoincrement())
+  alertInstanceId String        @db.Uuid
+  fromState       String?       @db.VarChar(16)
+  toState         String        @db.VarChar(16)
+  occurredAt      DateTime      @default(now())
+  instance        AlertInstance @relation(fields: [alertInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([alertInstanceId, occurredAt])
 }
