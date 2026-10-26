@@ -48,7 +48,7 @@ The agent, API, persistence layer, realtime transport, dashboard, and alert logi
 
 ## Requirements
 
-- Node.js 24 or newer
+- Node.js 24.x (see `.nvmrc`)
 - pnpm 11 or newer
 - Docker with Compose support for local PostgreSQL
 
