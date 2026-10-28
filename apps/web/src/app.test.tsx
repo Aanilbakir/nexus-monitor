@@ -12,7 +12,15 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './app';
+import {
+  DASHBOARD_API_KEY_STORAGE_KEY,
+  loadApiKey,
+  saveApiKey,
+} from './dashboard/api-key';
 import { LANGUAGE_STORAGE_KEY } from './i18n/language';
+import { messages } from './i18n/messages';
+
+const apiKey = 'a-dashboard-api-key';
 
 const snapshot: DashboardFleetSnapshot = {
   generatedAt: '2026-08-21T10:00:01.000Z',
@@ -67,47 +75,60 @@ function requestUrl(input: RequestInfo | URL): string {
   return input instanceof URL ? input.href : input.url;
 }
 
-class FakeEventSource {
-  public static latest: FakeEventSource | null = null;
-  private readonly listeners = new Map<string, EventListener>();
+function requestHeader(
+  init: RequestInit | undefined,
+  name: string,
+): string | undefined {
+  const headers = init?.headers as Record<string, string> | undefined;
+  return headers?.[name];
+}
 
-  public constructor(public readonly url: string) {
-    FakeEventSource.latest = this;
-  }
-
-  public addEventListener(type: string, listener: EventListener): void {
-    this.listeners.set(type, listener);
-  }
-
-  public close(): void {}
-
-  public emit(type: string, data = ''): void {
-    this.listeners.get(type)?.(new MessageEvent(type, { data }));
-  }
+function readyStreamResponse(): Response {
+  // Left open deliberately: the real SSE endpoint never closes the stream
+  // while connected (it relies on keepalive frames instead). Closing the
+  // body here would make `realtime.ts` treat the ready frame as an
+  // immediate disconnect, which does not reflect a live connection.
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(
+        new TextEncoder().encode('event: ready\ndata: {}\n\n'),
+      );
+    },
+  });
+  return new Response(stream, {
+    headers: { 'content-type': 'text/event-stream' },
+    status: 200,
+  });
 }
 
 describe('App', () => {
   beforeEach(() => {
-    localStorage.clear();
+    window.localStorage.clear();
+    window.sessionStorage.clear();
     window.history.replaceState(null, '', '/');
-    vi.stubGlobal('EventSource', FakeEventSource);
   });
 
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-    FakeEventSource.latest = null;
+    window.sessionStorage.clear();
   });
 
   it('loads the fleet, routes to its first host, and switches the global language', async () => {
+    saveApiKey(apiKey);
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(snapshot), {
-          headers: { 'content-type': 'application/json' },
-          status: 200,
-        }),
-      ),
+      vi.fn<typeof fetch>((input) => {
+        if (requestUrl(input).includes('/dashboard/events')) {
+          return Promise.resolve(readyStreamResponse());
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify(snapshot), {
+            headers: { 'content-type': 'application/json' },
+            status: 200,
+          }),
+        );
+      }),
     );
 
     render(<App />);
@@ -123,7 +144,6 @@ describe('App', () => {
     );
     expect(screen.getByText('24.5%')).toBeVisible();
 
-    FakeEventSource.latest?.emit('ready', '{}');
     await waitFor(() => expect(screen.getByText('Live')).toBeVisible());
     fireEvent.click(screen.getByRole('button', { name: 'Türkçe' }));
     expect(screen.getAllByText('Çevrimiçi').length).toBeGreaterThan(0);
@@ -131,13 +151,19 @@ describe('App', () => {
   });
 
   it('renders an honest empty fleet state', async () => {
+    saveApiKey(apiKey);
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ ...snapshot, hosts: [] }), {
-          status: 200,
-        }),
-      ),
+      vi.fn<typeof fetch>((input) => {
+        if (requestUrl(input).includes('/dashboard/events')) {
+          return Promise.resolve(readyStreamResponse());
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ ...snapshot, hosts: [] }), {
+            status: 200,
+          }),
+        );
+      }),
     );
 
     render(<App />);
@@ -149,10 +175,15 @@ describe('App', () => {
   });
 
   it('keeps current telemetry available while host history loads', async () => {
+    saveApiKey(apiKey);
     localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
     let resolveHistory: (response: Response) => void = () => undefined;
     const fetcher = vi.fn<typeof fetch>((input) => {
-      if (requestUrl(input).includes('/history?')) {
+      const url = requestUrl(input);
+      if (url.includes('/dashboard/events')) {
+        return Promise.resolve(readyStreamResponse());
+      }
+      if (url.includes('/history?')) {
         return new Promise<Response>((resolve) => {
           resolveHistory = resolve;
         });
@@ -179,14 +210,23 @@ describe('App', () => {
   });
 
   it('shows a retry action when the snapshot cannot be loaded', async () => {
-    const fetcher = vi
-      .fn()
-      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
-      .mockResolvedValueOnce(
+    saveApiKey(apiKey);
+    let snapshotCalls = 0;
+    const fetcher = vi.fn<typeof fetch>((input) => {
+      const url = requestUrl(input);
+      if (url.includes('/dashboard/events')) {
+        return Promise.resolve(readyStreamResponse());
+      }
+      snapshotCalls += 1;
+      if (snapshotCalls === 1) {
+        return Promise.resolve(new Response('unavailable', { status: 503 }));
+      }
+      return Promise.resolve(
         new Response(JSON.stringify({ ...snapshot, hosts: [] }), {
           status: 200,
         }),
       );
+    });
     vi.stubGlobal('fetch', fetcher);
 
     render(<App />);
@@ -194,6 +234,64 @@ describe('App', () => {
     expect(await screen.findByText('Dashboard unavailable')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(await screen.findByText('No monitored hosts')).toBeVisible();
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(snapshotCalls).toBe(2);
+  });
+
+  it('shows the key screen when no key is stored and does not call the API', () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+
+    render(<App />);
+
+    expect(screen.getByLabelText(messages.en.apiKeyLabel)).toBeVisible();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('stores an entered key and loads the dashboard using it as the bearer header', async () => {
+    const fetcher = vi.fn<typeof fetch>((input) => {
+      if (requestUrl(input).includes('/dashboard/events')) {
+        return Promise.resolve(readyStreamResponse());
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify(snapshot), { status: 200 }),
+      );
+    });
+    vi.stubGlobal('fetch', fetcher);
+
+    render(<App />);
+    fireEvent.change(screen.getByLabelText(messages.en.apiKeyLabel), {
+      target: { value: apiKey },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: messages.en.apiKeySubmit }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'web-prod-01' }),
+    ).toBeVisible();
+    expect(loadApiKey()).toBe(apiKey);
+    const hostsCall = fetcher.mock.calls.find(([input]) =>
+      requestUrl(input).includes('/dashboard/hosts'),
+    );
+    expect(requestHeader(hostsCall?.[1], 'authorization')).toBe(
+      `Bearer ${apiKey}`,
+    );
+  });
+
+  it('clears the stored key and returns to the key screen after an unauthorized response', async () => {
+    saveApiKey(apiKey);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(() =>
+        Promise.resolve(new Response('unauthorized', { status: 401 })),
+      ),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByLabelText(messages.en.apiKeyLabel)).toBeVisible();
+    expect(
+      window.sessionStorage.getItem(DASHBOARD_API_KEY_STORAGE_KEY),
+    ).toBeNull();
   });
 });

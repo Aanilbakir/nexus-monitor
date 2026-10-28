@@ -8,12 +8,13 @@ import {
   useState,
 } from 'react';
 
-import { fetchFleetSnapshot } from './api';
+import { DashboardUnauthorizedError, fetchFleetSnapshot } from './api';
+import { clearApiKey, loadApiKey } from './api-key';
 import { createFleetState, reduceFleet } from './fleet-state';
 import { openDashboardEvents } from './realtime';
 import { navigateToHost, readHostRoute } from './routing';
 
-export type LoadState = 'loading' | 'ready' | 'error';
+export type LoadState = 'loading' | 'ready' | 'error' | 'unauthorized';
 export type ConnectionState = 'connecting' | 'live' | 'reconnecting';
 
 export interface DashboardState {
@@ -57,6 +58,11 @@ export function useDashboard(): DashboardState {
     const controller = new AbortController();
     let closeEvents: (() => void) | undefined;
 
+    if (!loadApiKey()) {
+      setLoadState('unauthorized');
+      return () => controller.abort();
+    }
+
     const reconcile = async (): Promise<void> => {
       const snapshot = await fetchFleetSnapshot(controller.signal);
       dispatch({ snapshot, type: 'snapshot' });
@@ -91,8 +97,17 @@ export function useDashboard(): DashboardState {
               })
               .catch(() => setConnection('reconnecting'));
           },
+          onUnauthorized: () => {
+            clearApiKey();
+            setLoadState('unauthorized');
+          },
         });
       } catch (error) {
+        if (error instanceof DashboardUnauthorizedError) {
+          clearApiKey();
+          setLoadState('unauthorized');
+          return;
+        }
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           setLoadState('error');
         }

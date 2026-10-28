@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { ApiKeyGate } from './components/api-key-gate';
 import { AppShell } from './components/app-shell';
 import {
   EmptyState,
@@ -20,6 +21,10 @@ export function App() {
     saveLanguage(nextLanguage);
     setLanguage(nextLanguage);
   };
+
+  if (dashboard.loadState === 'unauthorized') {
+    return <ApiKeyGate copy={copy} onSubmit={dashboard.retry} />;
+  }
 
   if (dashboard.loadState === 'loading') {
     return <LoadingState copy={copy} />;

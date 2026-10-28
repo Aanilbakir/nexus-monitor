@@ -60,7 +60,7 @@ cd nexus-monitor
 pnpm install
 ```
 
-Copy `.env.example` to `.env`, then replace the example database password and enrollment token. The API and agent must use the same `AGENT_ENROLLMENT_TOKEN` for first enrollment.
+Copy `.env.example` to `.env`, then replace the example database password, enrollment token, and dashboard API key. The API and agent must use the same `AGENT_ENROLLMENT_TOKEN` for first enrollment. The dashboard REST and event-stream routes require a bearer `DASHBOARD_API_KEY` of at least 32 characters.
 
 ```bash
 docker compose up -d postgres

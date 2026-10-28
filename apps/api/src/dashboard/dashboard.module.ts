@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import type { PrismaClient } from '@nexus-monitor/database';
 
 import { AgentsModule, PRISMA } from '../agents/agents.module.js';
+import { CredentialService } from '../agents/domain/credential.service.js';
+import { readApiEnvironment } from '../config/environment.js';
 import { DashboardController } from './dashboard.controller.js';
 import { DashboardEventsController } from './dashboard-events.controller.js';
 import { AvailabilityMonitor } from './domain/availability-monitor.js';
@@ -10,6 +12,7 @@ import {
   DashboardQueryService,
   type DashboardRepository,
 } from './domain/dashboard-query.service.js';
+import { DashboardApiKeyGuard } from './infrastructure/dashboard-api-key.guard.js';
 import { PrismaDashboardRepository } from './infrastructure/prisma-dashboard.repository.js';
 
 const DASHBOARD_REPOSITORY = Symbol('DASHBOARD_REPOSITORY');
@@ -18,6 +21,15 @@ const DASHBOARD_REPOSITORY = Symbol('DASHBOARD_REPOSITORY');
   imports: [AgentsModule],
   controllers: [DashboardController, DashboardEventsController],
   providers: [
+    {
+      provide: DashboardApiKeyGuard,
+      useFactory: (): DashboardApiKeyGuard =>
+        new DashboardApiKeyGuard(
+          new CredentialService(
+            readApiEnvironment(process.env).dashboardApiKey,
+          ),
+        ),
+    },
     {
       provide: DASHBOARD_REPOSITORY,
       inject: [PRISMA],

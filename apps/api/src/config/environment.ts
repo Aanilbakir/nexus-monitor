@@ -1,10 +1,13 @@
 export interface ApiEnvironment {
   readonly agentEnrollmentToken: string;
+  readonly dashboardApiKey: string;
   readonly databaseUrl: string;
   readonly host: string;
   readonly nodeEnv: string;
   readonly port: number;
 }
+
+const DASHBOARD_API_KEY_MIN_LENGTH = 32;
 
 export function readApiEnvironment(
   source: Readonly<Record<string, string | undefined>>,
@@ -19,10 +22,18 @@ export function readApiEnvironment(
   }
 
   const agentEnrollmentToken = readRequired(source, 'AGENT_ENROLLMENT_TOKEN');
+  const dashboardApiKey = readRequired(source, 'DASHBOARD_API_KEY');
   const databaseUrl = readRequired(source, 'DATABASE_URL');
+
+  if (dashboardApiKey.length < DASHBOARD_API_KEY_MIN_LENGTH) {
+    throw new Error(
+      `Invalid DASHBOARD_API_KEY: expected at least ${DASHBOARD_API_KEY_MIN_LENGTH} characters.`,
+    );
+  }
 
   return {
     agentEnrollmentToken,
+    dashboardApiKey,
     databaseUrl,
     host: source.API_HOST ?? '127.0.0.1',
     nodeEnv: source.NODE_ENV ?? 'development',

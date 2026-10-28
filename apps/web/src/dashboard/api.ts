@@ -7,6 +7,8 @@ import type {
 } from '@nexus-monitor/contracts';
 import { isDashboardHistoryResponse } from '@nexus-monitor/contracts';
 
+import { loadApiKey } from './api-key';
+
 export class DashboardRequestError extends Error {
   public constructor() {
     super('Dashboard data is unavailable.');
@@ -14,11 +16,29 @@ export class DashboardRequestError extends Error {
   }
 }
 
+export class DashboardUnauthorizedError extends Error {
+  public constructor() {
+    super('Dashboard authentication is required.');
+    this.name = 'DashboardUnauthorizedError';
+  }
+}
+
+function authorizationHeaders(): Record<string, string> {
+  const apiKey = loadApiKey();
+  return apiKey ? { authorization: `Bearer ${apiKey}` } : {};
+}
+
 export async function fetchFleetSnapshot(
   signal: AbortSignal,
   fetcher: typeof fetch = fetch,
 ): Promise<DashboardFleetSnapshot> {
-  const response = await fetcher('/api/v1/dashboard/hosts', { signal });
+  const response = await fetcher('/api/v1/dashboard/hosts', {
+    headers: authorizationHeaders(),
+    signal,
+  });
+  if (response.status === 401) {
+    throw new DashboardUnauthorizedError();
+  }
   if (!response.ok) {
     throw new DashboardRequestError();
   }
@@ -39,8 +59,11 @@ export async function fetchHostHistory(
 ): Promise<DashboardHistoryResponse> {
   const response = await fetcher(
     `/api/v1/dashboard/hosts/${encodeURIComponent(hostId)}/history?range=${range}`,
-    { signal },
+    { headers: authorizationHeaders(), signal },
   );
+  if (response.status === 401) {
+    throw new DashboardUnauthorizedError();
+  }
   if (!response.ok) {
     throw new DashboardRequestError();
   }

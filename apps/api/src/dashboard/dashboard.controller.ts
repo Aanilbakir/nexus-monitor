@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import type {
   DashboardFleetSnapshot,
@@ -14,8 +15,10 @@ import type {
 
 import { HistoryQueryDto } from './dto/history-query.dto.js';
 import { DashboardQueryService } from './domain/dashboard-query.service.js';
+import { DashboardAuthGuard } from './infrastructure/dashboard-api-key.guard.js';
 
 @Controller('dashboard/hosts')
+@UseGuards(DashboardAuthGuard)
 export class DashboardController {
   public constructor(private readonly queries: DashboardQueryService) {}
 

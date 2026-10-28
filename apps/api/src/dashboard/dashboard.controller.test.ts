@@ -1,12 +1,18 @@
+import type { INestApplication } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import type {
   DashboardFleetSnapshot,
   DashboardHistoryResponse,
   DashboardHost,
 } from '@nexus-monitor/contracts';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 
+import { CredentialService } from '../agents/domain/credential.service.js';
 import { DashboardController } from './dashboard.controller.js';
-import type { DashboardQueryService } from './domain/dashboard-query.service.js';
+import { DashboardQueryService } from './domain/dashboard-query.service.js';
+import { DashboardApiKeyGuard } from './infrastructure/dashboard-api-key.guard.js';
 
 const host: DashboardHost = {
   agentId: '22222222-2222-4222-8222-222222222222',
@@ -81,5 +87,70 @@ describe('DashboardController', () => {
     await expect(
       new DashboardController(queries).getHistory(host.id, { range: '30d' }),
     ).rejects.toEqual(new NotFoundException('Host not found.'));
+  });
+});
+
+describe('DashboardController authorization', () => {
+  const dashboardApiKey = 'd'.repeat(32);
+  let app: INestApplication;
+  let baseUrl: string;
+  let listHosts: jest.Mock;
+  let server: Server;
+
+  beforeEach(async () => {
+    listHosts = jest.fn().mockResolvedValue({
+      generatedAt: '2026-08-21T10:00:01.000Z',
+      hosts: [],
+    });
+    const queries = { listHosts } as unknown as DashboardQueryService;
+
+    const moduleRef = await Test.createTestingModule({
+      controllers: [DashboardController],
+      providers: [
+        { provide: DashboardQueryService, useValue: queries },
+        {
+          provide: DashboardApiKeyGuard,
+          useFactory: () =>
+            new DashboardApiKeyGuard(new CredentialService(dashboardApiKey)),
+        },
+      ],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+    await app.listen(0);
+    server = app.getHttpServer() as Server;
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterEach(async () => {
+    server.closeAllConnections?.();
+    await app.close();
+  });
+
+  it('rejects a fleet snapshot request with no authorization header', async () => {
+    const response = await fetch(`${baseUrl}/dashboard/hosts`);
+
+    expect(response.status).toBe(401);
+    expect(listHosts).not.toHaveBeenCalled();
+  });
+
+  it('rejects a fleet snapshot request with the wrong key', async () => {
+    const response = await fetch(`${baseUrl}/dashboard/hosts`, {
+      headers: { authorization: 'Bearer wrong-key-padded-to-32-characters' },
+    });
+
+    expect(response.status).toBe(401);
+    expect(listHosts).not.toHaveBeenCalled();
+  });
+
+  it('allows a fleet snapshot request with the correct key', async () => {
+    const response = await fetch(`${baseUrl}/dashboard/hosts`, {
+      headers: { authorization: `Bearer ${dashboardApiKey}` },
+    });
+
+    expect(response.status).toBe(200);
+    expect(listHosts).toHaveBeenCalledTimes(1);
   });
 });

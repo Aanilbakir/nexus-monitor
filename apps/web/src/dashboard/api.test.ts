@@ -2,18 +2,30 @@ import type {
   DashboardFleetSnapshot,
   DashboardHistoryResponse,
 } from '@nexus-monitor/contracts';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   DashboardRequestError,
+  DashboardUnauthorizedError,
   fetchFleetSnapshot,
   fetchHostHistory,
 } from './api';
+import { saveApiKey } from './api-key';
+
+const apiKey = 'a-dashboard-api-key';
 
 const snapshot: DashboardFleetSnapshot = {
   generatedAt: '2026-08-21T10:00:00.000Z',
   hosts: [],
 };
+
+beforeEach(() => {
+  saveApiKey(apiKey);
+});
+
+afterEach(() => {
+  window.sessionStorage.clear();
+});
 
 describe('fetchFleetSnapshot', () => {
   it('returns a valid current snapshot', async () => {
@@ -29,6 +41,7 @@ describe('fetchFleetSnapshot', () => {
       fetchFleetSnapshot(controller.signal, fetcher),
     ).resolves.toEqual(snapshot);
     expect(fetcher).toHaveBeenCalledWith('/api/v1/dashboard/hosts', {
+      headers: { authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
     });
   });
@@ -45,6 +58,31 @@ describe('fetchFleetSnapshot', () => {
         vi.fn().mockResolvedValue(response),
       ),
     ).rejects.toBeInstanceOf(DashboardRequestError);
+  });
+
+  it('rejects with a distinguishable error on an unauthorized response', async () => {
+    await expect(
+      fetchFleetSnapshot(
+        new AbortController().signal,
+        vi
+          .fn()
+          .mockResolvedValue(new Response('unauthorized', { status: 401 })),
+      ),
+    ).rejects.toBeInstanceOf(DashboardUnauthorizedError);
+  });
+
+  it('sends no authorization header when no key is stored', async () => {
+    window.sessionStorage.clear();
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(snapshot), { status: 200 }),
+      );
+
+    await fetchFleetSnapshot(new AbortController().signal, fetcher);
+
+    const [, init] = fetcher.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual({});
   });
 });
 
@@ -72,7 +110,10 @@ describe('fetchHostHistory', () => {
     ).resolves.toEqual(history);
     expect(fetcher).toHaveBeenCalledWith(
       `/api/v1/dashboard/hosts/${history.hostId}/history?range=24h`,
-      { signal: controller.signal },
+      {
+        headers: { authorization: `Bearer ${apiKey}` },
+        signal: controller.signal,
+      },
     );
   });
 
@@ -90,5 +131,18 @@ describe('fetchHostHistory', () => {
         vi.fn().mockResolvedValue(response),
       ),
     ).rejects.toBeInstanceOf(DashboardRequestError);
+  });
+
+  it('rejects with a distinguishable error on an unauthorized response', async () => {
+    await expect(
+      fetchHostHistory(
+        history.hostId,
+        '24h',
+        new AbortController().signal,
+        vi
+          .fn()
+          .mockResolvedValue(new Response('unauthorized', { status: 401 })),
+      ),
+    ).rejects.toBeInstanceOf(DashboardUnauthorizedError);
   });
 });

@@ -3,6 +3,9 @@ import type { Language } from './language';
 export const messages = {
   en: {
     allHosts: 'All hosts',
+    apiKeyLabel: 'Dashboard API key',
+    apiKeySubmit: 'Continue',
+    apiKeyTitle: 'Dashboard key',
     backToFleet: 'Back to fleet',
     cpu: 'CPU',
     disk: 'Disk',
@@ -60,6 +63,9 @@ export const messages = {
   },
   tr: {
     allHosts: 'Tüm hostlar',
+    apiKeyLabel: 'Panel API anahtarı',
+    apiKeySubmit: 'Devam et',
+    apiKeyTitle: 'Panel anahtarı',
     backToFleet: 'Host listesine dön',
     cpu: 'İşlemci',
     disk: 'Disk',

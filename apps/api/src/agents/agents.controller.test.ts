@@ -1,5 +1,7 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 
+import { DashboardApiKeyGuard } from '../dashboard/infrastructure/dashboard-api-key.guard.js';
 import { AgentsController } from './agents.controller.js';
 import type { AgentService } from './domain/agent.service.js';
 import { UnauthorizedAgentError } from './domain/agent.service.js';
@@ -62,5 +64,14 @@ describe('AgentsController metrics', () => {
     ).rejects.toEqual(
       new BadRequestException('System metric sample is invalid.'),
     );
+  });
+});
+
+describe('AgentsController authorization', () => {
+  it('is not protected by the dashboard API key guard', () => {
+    const guards = (Reflect.getMetadata(GUARDS_METADATA, AgentsController) ??
+      []) as unknown[];
+
+    expect(guards).not.toContain(DashboardApiKeyGuard);
   });
 });
