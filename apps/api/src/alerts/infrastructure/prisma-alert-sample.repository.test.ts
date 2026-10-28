@@ -14,7 +14,7 @@ function prismaWithRows(
 }
 
 describe('PrismaAlertSampleRepository', () => {
-  it('queries samples for the agent within the window, ordered oldest first', async () => {
+  it('queries samples for the agent within the window, capped at the newest MAX_WINDOW_SAMPLES rows', async () => {
     const prisma = prismaWithRows([
       {
         collectedAt: new Date('2026-08-21T09:59:00.000Z'),
@@ -41,7 +41,8 @@ describe('PrismaAlertSampleRepository', () => {
       ).mock.calls[0]?.[0],
     ).toEqual({
       where: { agentId, collectedAt: { gte: windowStart } },
-      orderBy: { collectedAt: 'asc' },
+      orderBy: { collectedAt: 'desc' },
+      take: 500,
       select: {
         collectedAt: true,
         cpuPercent: true,
@@ -51,6 +52,40 @@ describe('PrismaAlertSampleRepository', () => {
         memoryUsedBytes: true,
       },
     });
+  });
+
+  it('re-orders the capped newest-first rows back to oldest-first for the evaluator', async () => {
+    const older = new Date('2026-08-21T09:58:00.000Z');
+    const newer = new Date('2026-08-21T09:59:00.000Z');
+    const prisma = prismaWithRows([
+      {
+        collectedAt: newer,
+        cpuPercent: 95,
+        diskTotalBytes: 1_000n,
+        diskUsedBytes: 400n,
+        memoryTotalBytes: 1_000n,
+        memoryUsedBytes: 500n,
+      },
+      {
+        collectedAt: older,
+        cpuPercent: 10,
+        diskTotalBytes: 1_000n,
+        diskUsedBytes: 400n,
+        memoryTotalBytes: 1_000n,
+        memoryUsedBytes: 500n,
+      },
+    ]);
+
+    await expect(
+      new PrismaAlertSampleRepository(prisma).findRecentSamples(
+        agentId,
+        'cpuPercent',
+        windowStart,
+      ),
+    ).resolves.toEqual([
+      { collectedAt: older, value: 10 },
+      { collectedAt: newer, value: 95 },
+    ]);
   });
 
   it('maps rows to the cpuPercent column directly', async () => {

@@ -14,6 +14,9 @@ interface SampleRow {
   readonly memoryUsedBytes: bigint;
 }
 
+/** Hard cap on rows scanned per rule evaluation so window queries stay bounded regardless of durationSeconds. */
+const MAX_WINDOW_SAMPLES = 500;
+
 export class PrismaAlertSampleRepository implements AlertSampleRepository {
   public constructor(private readonly prisma: PrismaClient) {}
 
@@ -24,7 +27,8 @@ export class PrismaAlertSampleRepository implements AlertSampleRepository {
   ): Promise<readonly AlertSampleWindowEntry[]> {
     const rows = await this.prisma.systemMetricSample.findMany({
       where: { agentId, collectedAt: { gte: windowStart } },
-      orderBy: { collectedAt: 'asc' },
+      orderBy: { collectedAt: 'desc' },
+      take: MAX_WINDOW_SAMPLES,
       select: {
         collectedAt: true,
         cpuPercent: true,
@@ -42,7 +46,7 @@ export class PrismaAlertSampleRepository implements AlertSampleRepository {
         samples.push({ collectedAt: row.collectedAt, value });
       }
     }
-    return samples;
+    return samples.reverse();
   }
 }
 

@@ -64,6 +64,34 @@ export class InvalidMetricSampleError extends Error {
   }
 }
 
+/** Upper bound on how long `MetricService.ingest` will wait on the alert hook before giving up. */
+const ALERT_HOOK_TIMEOUT_MS = 2_000;
+
+class AlertHookTimeoutError extends Error {
+  public constructor() {
+    super('Alert hook timed out.');
+    this.name = 'AlertHookTimeoutError';
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new AlertHookTimeoutError());
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      },
+    );
+  });
+}
+
 export class MetricService {
   public constructor(
     private readonly repository: MetricRepository,
@@ -128,25 +156,34 @@ export class MetricService {
 
       if (this.alertHook) {
         try {
-          await this.alertHook.afterInsert({
-            agentId,
-            collectedAt: new Date(sample.collectedAt),
-            hostId: identity.hostId,
-            metrics: {
-              cpuPercent: sample.cpuPercent,
-              diskUsedPercent: percentOf(
-                sample.diskUsedBytes,
-                sample.diskTotalBytes,
-              ),
-              memoryUsedPercent: percentOf(
-                sample.memoryUsedBytes,
-                sample.memoryTotalBytes,
-              ),
-            },
-            receivedAt,
-          });
+          await withTimeout(
+            this.alertHook.afterInsert({
+              agentId,
+              collectedAt: new Date(sample.collectedAt),
+              hostId: identity.hostId,
+              metrics: {
+                cpuPercent: sample.cpuPercent,
+                diskUsedPercent: percentOf(
+                  sample.diskUsedBytes,
+                  sample.diskTotalBytes,
+                ),
+                memoryUsedPercent: percentOf(
+                  sample.memoryUsedBytes,
+                  sample.memoryTotalBytes,
+                ),
+              },
+              receivedAt,
+            }),
+            ALERT_HOOK_TIMEOUT_MS,
+          );
         } catch (error) {
-          console.error(`Alert hook failed for agent ${agentId}.`, error);
+          if (error instanceof AlertHookTimeoutError) {
+            console.warn(
+              `Alert hook timed out after ${ALERT_HOOK_TIMEOUT_MS}ms for agent ${agentId}.`,
+            );
+          } else {
+            console.error(`Alert hook failed for agent ${agentId}.`, error);
+          }
         }
       }
     }

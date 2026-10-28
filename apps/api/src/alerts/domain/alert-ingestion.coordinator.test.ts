@@ -248,6 +248,73 @@ describe('AlertIngestionCoordinator', () => {
     expect(received[0]?.payload).toMatchObject({ metric: 'cpuPercent' });
   });
 
+  it('evaluates enabled rules concurrently: a rule stuck on its DB query does not block the next rule from completing', async () => {
+    const repository = new FakeAlertRepository();
+    const evaluator = new AlertEvaluatorService(repository, () => now);
+    const rules = new FakeAlertRuleRepository([cpuRule, memoryRule]);
+    const samples = new FakeAlertSampleRepository();
+    const callOrder: string[] = [];
+    let rejectFirst: ((error: Error) => void) | undefined;
+    const findRecentSamples = jest.fn((_agentId: string, metric: string) => {
+      callOrder.push(metric);
+      if (metric === cpuRule.metric) {
+        return new Promise<never>((_resolve, reject) => {
+          rejectFirst = reject;
+        });
+      }
+      return Promise.resolve([]);
+    });
+    samples.findRecentSamples =
+      findRecentSamples as unknown as typeof samples.findRecentSamples;
+
+    const publisher = new DashboardEventPublisher();
+    const received: DashboardEvent[] = [];
+    publisher.subscribe((event) => received.push(event));
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const coordinator = new AlertIngestionCoordinator(
+      rules,
+      samples,
+      evaluator,
+      publisher,
+    );
+
+    const afterInsertPromise = coordinator.afterInsert({
+      agentId,
+      collectedAt: now,
+      hostId,
+      metrics: { cpuPercent: 95, memoryUsedPercent: 95 },
+      receivedAt: now,
+    });
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(callOrder).toEqual([cpuRule.metric, memoryRule.metric]);
+    expect(received).toEqual([
+      {
+        hostId,
+        occurredAt: now.toISOString(),
+        payload: {
+          agentId,
+          metric: 'memoryUsedPercent',
+          observedValue: 95,
+          ruleId: 'rule-memory',
+          ruleName: 'High memory',
+          severity: 'warning',
+        },
+        type: 'alert.opened',
+        version: 1,
+      },
+    ]);
+
+    rejectFirst?.(new Error('db unavailable'));
+    await afterInsertPromise;
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    const [message] = errorSpy.mock.calls[0] as [string];
+    expect(message).toContain('rule-cpu');
+    errorSpy.mockRestore();
+  });
+
   it('swallows an evaluation error for one rule, logs it, and still evaluates the remaining rules', async () => {
     const repository = new FakeAlertRepository();
     const evaluator = new AlertEvaluatorService(repository, () => now);

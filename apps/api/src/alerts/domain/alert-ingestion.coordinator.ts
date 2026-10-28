@@ -28,21 +28,30 @@ export class AlertIngestionCoordinator implements MetricAlertHook {
   public async afterInsert(input: MetricAlertHookInput): Promise<void> {
     const enabledRules = await this.rules.findEnabledRules();
 
-    for (const rule of enabledRules) {
-      const currentValue = input.metrics[rule.metric];
-      if (currentValue === undefined) {
-        continue;
-      }
+    const outcomes = await Promise.allSettled(
+      enabledRules.map((rule) => this.evaluateIfApplicable(rule, input)),
+    );
 
-      try {
-        await this.evaluateRule(rule, input, currentValue);
-      } catch (error) {
+    outcomes.forEach((outcome, index) => {
+      if (outcome.status === 'rejected') {
         console.error(
-          `Alert rule evaluation failed for rule ${rule.id}.`,
-          error,
+          `Alert rule evaluation failed for rule ${enabledRules[index]?.id}.`,
+          outcome.reason,
         );
       }
+    });
+  }
+
+  private async evaluateIfApplicable(
+    rule: PersistedAlertRule,
+    input: MetricAlertHookInput,
+  ): Promise<void> {
+    const currentValue = input.metrics[rule.metric];
+    if (currentValue === undefined) {
+      return;
     }
+
+    await this.evaluateRule(rule, input, currentValue);
   }
 
   private async evaluateRule(

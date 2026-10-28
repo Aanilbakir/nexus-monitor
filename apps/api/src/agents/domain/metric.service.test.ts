@@ -271,6 +271,48 @@ describe('MetricService', () => {
       errorSpy.mockRestore();
     });
 
+    it('times out a hanging alert hook so ingestion resolves and the sample is still stored and published', async () => {
+      jest.useFakeTimers();
+      try {
+        const repository = new InMemoryMetricRepository();
+        const credentials = new CredentialService('enrollment-secret');
+        repository.credentialHash = credentials.hash('agent-secret');
+        const publisher = new DashboardEventPublisher();
+        const events: unknown[] = [];
+        publisher.subscribe((event) => events.push(event));
+        const alertHook: MetricAlertHook = {
+          afterInsert: () => new Promise(() => {}),
+        };
+        const warnSpy = jest
+          .spyOn(console, 'warn')
+          .mockImplementation(() => {});
+        const service = new MetricService(
+          repository,
+          credentials,
+          () => now,
+          publisher,
+          alertHook,
+        );
+
+        const ingestPromise = service.ingest(agentId, 'agent-secret', sample);
+        await jest.advanceTimersByTimeAsync(2_000);
+
+        await expect(ingestPromise).resolves.toEqual({
+          collectedAt: sample.collectedAt,
+          metricsIntervalSeconds: 15,
+          receivedAt: now.toISOString(),
+        });
+        expect(repository.inserted).not.toBeNull();
+        expect(events).toHaveLength(1);
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const [message] = warnSpy.mock.calls[0] as [string];
+        expect(message).not.toContain('agent-secret');
+        warnSpy.mockRestore();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it('wires a real AlertIngestionCoordinator end to end: ingestion evaluates rules and publishes the alert transition', async () => {
       class FakeAlertRepository implements AlertRepository {
         public active: ActiveAlertInstance | null = null;
