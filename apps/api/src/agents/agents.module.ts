@@ -1,11 +1,15 @@
-import { Inject, Module, type OnApplicationShutdown } from '@nestjs/common';
-import { createPrismaClient, type PrismaClient } from '@nexus-monitor/database';
+import { Module } from '@nestjs/common';
+import type { PrismaClient } from '@nexus-monitor/database';
 
 import { readApiEnvironment } from '../config/environment.js';
+import { AlertsModule } from '../alerts/alerts.module.js';
+import { PersistenceModule, PRISMA } from '../shared/persistence.module.js';
 import { AgentService, type AgentRepository } from './domain/agent.service.js';
 import { CredentialService } from './domain/credential.service.js';
 import {
+  METRIC_ALERT_HOOK,
   MetricService,
+  type MetricAlertHook,
   type MetricRepository,
 } from './domain/metric.service.js';
 import { PrismaAgentRepository } from './infrastructure/prisma-agent.repository.js';
@@ -13,28 +17,22 @@ import { PrismaMetricRepository } from './infrastructure/prisma-metric.repositor
 import { AgentsController } from './agents.controller.js';
 import { DashboardEventPublisher } from '../dashboard/domain/dashboard-event.publisher.js';
 
-export const PRISMA = Symbol('PRISMA');
+export { PRISMA };
+
 const AGENT_REPOSITORY = Symbol('AGENT_REPOSITORY');
 const CREDENTIALS = Symbol('CREDENTIALS');
 const METRIC_REPOSITORY = Symbol('METRIC_REPOSITORY');
 
 @Module({
+  imports: [PersistenceModule, AlertsModule],
   controllers: [AgentsController],
-  exports: [DashboardEventPublisher, PRISMA],
+  exports: [PersistenceModule],
   providers: [
-    DashboardEventPublisher,
     {
       provide: METRIC_REPOSITORY,
       inject: [PRISMA],
       useFactory: (prisma: PrismaClient): MetricRepository =>
         new PrismaMetricRepository(prisma),
-    },
-    {
-      provide: PRISMA,
-      useFactory: (): PrismaClient => {
-        const environment = readApiEnvironment(process.env);
-        return createPrismaClient(environment.databaseUrl);
-      },
     },
     {
       provide: AGENT_REPOSITORY,
@@ -61,20 +59,26 @@ const METRIC_REPOSITORY = Symbol('METRIC_REPOSITORY');
     },
     {
       provide: MetricService,
-      inject: [METRIC_REPOSITORY, CREDENTIALS, DashboardEventPublisher],
+      inject: [
+        METRIC_REPOSITORY,
+        CREDENTIALS,
+        DashboardEventPublisher,
+        METRIC_ALERT_HOOK,
+      ],
       useFactory: (
         repository: MetricRepository,
         credentials: CredentialService,
         dashboardEvents: DashboardEventPublisher,
+        alertHook: MetricAlertHook,
       ): MetricService =>
-        new MetricService(repository, credentials, undefined, dashboardEvents),
+        new MetricService(
+          repository,
+          credentials,
+          undefined,
+          dashboardEvents,
+          alertHook,
+        ),
     },
   ],
 })
-export class AgentsModule implements OnApplicationShutdown {
-  public constructor(@Inject(PRISMA) private readonly prisma: PrismaClient) {}
-
-  public async onApplicationShutdown(): Promise<void> {
-    await this.prisma.$disconnect();
-  }
-}
+export class AgentsModule {}

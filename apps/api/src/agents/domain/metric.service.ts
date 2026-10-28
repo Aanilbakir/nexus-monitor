@@ -36,6 +36,27 @@ export interface MetricRepository {
   insert(input: InsertMetricInput): Promise<'duplicate' | 'inserted'>;
 }
 
+export interface MetricAlertHookInput {
+  readonly agentId: string;
+  readonly collectedAt: Date;
+  readonly hostId: string;
+  readonly metrics: Readonly<Record<string, number>>;
+  readonly receivedAt: Date;
+}
+
+/** Narrow post-ingestion hook so `MetricService` stays decoupled from the alerts module. */
+export interface MetricAlertHook {
+  afterInsert(input: MetricAlertHookInput): Promise<void>;
+}
+
+/**
+ * DI token for {@link MetricAlertHook}. Declared here (the consuming domain)
+ * rather than in `agents.module.ts` so `AlertsModule` can bind it without
+ * importing back from `agents.module.ts`, which would create a circular
+ * module import now that `AgentsModule` imports `AlertsModule` for this hook.
+ */
+export const METRIC_ALERT_HOOK = Symbol('METRIC_ALERT_HOOK');
+
 export class InvalidMetricSampleError extends Error {
   public constructor() {
     super('System metric sample is invalid.');
@@ -49,6 +70,7 @@ export class MetricService {
     private readonly credentials: CredentialService,
     private readonly clock: Clock = () => new Date(),
     private readonly dashboardEvents = new DashboardEventPublisher(),
+    private readonly alertHook?: MetricAlertHook,
   ) {}
 
   public async ingest(
@@ -103,6 +125,30 @@ export class MetricService {
         type: 'host.metric',
         version: 1,
       });
+
+      if (this.alertHook) {
+        try {
+          await this.alertHook.afterInsert({
+            agentId,
+            collectedAt: new Date(sample.collectedAt),
+            hostId: identity.hostId,
+            metrics: {
+              cpuPercent: sample.cpuPercent,
+              diskUsedPercent: percentOf(
+                sample.diskUsedBytes,
+                sample.diskTotalBytes,
+              ),
+              memoryUsedPercent: percentOf(
+                sample.memoryUsedBytes,
+                sample.memoryTotalBytes,
+              ),
+            },
+            receivedAt,
+          });
+        } catch (error) {
+          console.error(`Alert hook failed for agent ${agentId}.`, error);
+        }
+      }
     }
 
     return createMetricIngestResponse(
@@ -110,4 +156,8 @@ export class MetricService {
       receivedAt.toISOString(),
     );
   }
+}
+
+function percentOf(used: number, total: number): number {
+  return total === 0 ? 0 : (used / total) * 100;
 }

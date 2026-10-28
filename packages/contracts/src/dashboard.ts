@@ -53,9 +53,35 @@ export interface DashboardHistoryResponse {
 }
 
 export const DASHBOARD_EVENT_TYPES = {
+  alertOpened: 'alert.opened',
+  alertResolved: 'alert.resolved',
   metric: 'host.metric',
   status: 'host.status',
 } as const;
+
+export type AlertInstanceState = 'ACKNOWLEDGED' | 'OPEN' | 'RESOLVED';
+
+export interface DashboardAlertInstance {
+  readonly acknowledgedAt: string | null;
+  readonly agentId: string;
+  readonly id: string;
+  readonly metric: string;
+  readonly observedValue: number;
+  readonly openedAt: string;
+  readonly ruleId: string;
+  readonly ruleName: string;
+  readonly severity: string;
+  readonly state: AlertInstanceState;
+}
+
+interface DashboardAlertTransitionPayload {
+  readonly agentId: string;
+  readonly metric: string;
+  readonly observedValue: number;
+  readonly ruleId: string;
+  readonly ruleName: string;
+  readonly severity: string;
+}
 
 export type DashboardEvent =
   | {
@@ -73,6 +99,20 @@ export type DashboardEvent =
         readonly lastSeenAt: string | null;
       };
       readonly type: typeof DASHBOARD_EVENT_TYPES.status;
+      readonly version: 1;
+    }
+  | {
+      readonly hostId: string;
+      readonly occurredAt: string;
+      readonly payload: DashboardAlertTransitionPayload;
+      readonly type: typeof DASHBOARD_EVENT_TYPES.alertOpened;
+      readonly version: 1;
+    }
+  | {
+      readonly hostId: string;
+      readonly occurredAt: string;
+      readonly payload: DashboardAlertTransitionPayload;
+      readonly type: typeof DASHBOARD_EVENT_TYPES.alertResolved;
       readonly version: 1;
     };
 
@@ -100,7 +140,30 @@ export function isDashboardEvent(value: unknown): value is DashboardEvent {
     );
   }
 
+  if (
+    value.type === DASHBOARD_EVENT_TYPES.alertOpened ||
+    value.type === DASHBOARD_EVENT_TYPES.alertResolved
+  ) {
+    return isAlertTransitionPayload(value.payload);
+  }
+
   return false;
+}
+
+function isAlertTransitionPayload(value: Record<string, unknown>): boolean {
+  return (
+    isNonEmptyString(value.agentId) &&
+    isNonEmptyString(value.metric) &&
+    typeof value.observedValue === 'number' &&
+    Number.isFinite(value.observedValue) &&
+    isNonEmptyString(value.ruleId) &&
+    isNonEmptyString(value.ruleName) &&
+    isNonEmptyString(value.severity)
+  );
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
 }
 
 export function isDashboardHistoryResponse(

@@ -2,6 +2,7 @@ import type { PrismaClient } from '@nexus-monitor/database';
 
 import type {
   ActiveAlertInstance,
+  ActiveAlertSummary,
   AlertInstanceState,
   AlertRepository,
   OpenAlertInstanceInput,
@@ -69,6 +70,46 @@ export class PrismaAlertRepository implements AlertRepository {
       if (isDedupeKeyConflict(error)) return 'already_active';
       throw error;
     }
+  }
+
+  public async findState(id: string): Promise<AlertInstanceState | null> {
+    const instance = await this.prisma.alertInstance.findUnique({
+      where: { id },
+      select: { state: true },
+    });
+
+    return instance ? (instance.state as AlertInstanceState) : null;
+  }
+
+  public async listActive(): Promise<readonly ActiveAlertSummary[]> {
+    const instances = await this.prisma.alertInstance.findMany({
+      where: { state: { not: 'RESOLVED' } },
+      select: {
+        acknowledgedAt: true,
+        agentId: true,
+        dedupeKey: true,
+        id: true,
+        observedValue: true,
+        openedAt: true,
+        rule: { select: { metric: true, name: true, severity: true } },
+        ruleId: true,
+        state: true,
+      },
+    });
+
+    return instances.map((instance) => ({
+      acknowledgedAt: instance.acknowledgedAt,
+      agentId: instance.agentId,
+      dedupeKey: instance.dedupeKey,
+      id: instance.id,
+      metric: instance.rule.metric,
+      observedValue: instance.observedValue,
+      openedAt: instance.openedAt,
+      ruleId: instance.ruleId,
+      ruleName: instance.rule.name,
+      severity: instance.rule.severity,
+      state: instance.state as AlertInstanceState,
+    }));
   }
 
   public async resolve(id: string, at: Date): Promise<boolean> {

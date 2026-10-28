@@ -28,6 +28,13 @@ export function reduceFleet(
     };
   }
 
+  if (
+    action.event.type === 'alert.opened' ||
+    action.event.type === 'alert.resolved'
+  ) {
+    return state;
+  }
+
   const index = state.hosts.findIndex(
     (host) => host.id === action.event.hostId,
   );

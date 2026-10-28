@@ -17,6 +17,8 @@ const DASHBOARD_EVENTS_URL = '/api/v1/dashboard/events';
 const FRAME_EVENT_TYPES: readonly string[] = [
   DASHBOARD_EVENT_TYPES.metric,
   DASHBOARD_EVENT_TYPES.status,
+  DASHBOARD_EVENT_TYPES.alertOpened,
+  DASHBOARD_EVENT_TYPES.alertResolved,
 ];
 const INITIAL_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 30_000;

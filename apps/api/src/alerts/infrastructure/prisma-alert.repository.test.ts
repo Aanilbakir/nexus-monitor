@@ -319,4 +319,93 @@ describe('PrismaAlertRepository', () => {
       expect(transitionCreate).not.toHaveBeenCalled();
     });
   });
+
+  describe('findState', () => {
+    it('returns the current state of a known instance', async () => {
+      const findUnique = jest.fn().mockResolvedValue({ state: 'ACKNOWLEDGED' });
+      const prisma = {
+        alertInstance: { findUnique },
+      } as unknown as PrismaClient;
+
+      await expect(
+        new PrismaAlertRepository(prisma).findState('instance-1'),
+      ).resolves.toBe('ACKNOWLEDGED');
+      expect(findUnique).toHaveBeenCalledWith({
+        where: { id: 'instance-1' },
+        select: { state: true },
+      });
+    });
+
+    it('returns null for an unknown instance', async () => {
+      const prisma = {
+        alertInstance: { findUnique: jest.fn().mockResolvedValue(null) },
+      } as unknown as PrismaClient;
+
+      await expect(
+        new PrismaAlertRepository(prisma).findState('missing'),
+      ).resolves.toBeNull();
+    });
+  });
+
+  describe('listActive', () => {
+    it('lists non-resolved instances joined with their rule details', async () => {
+      const row = {
+        acknowledgedAt: null,
+        agentId: 'agent-1',
+        dedupeKey: 'rule-1:agent-1',
+        id: 'instance-1',
+        observedValue: 95,
+        openedAt: new Date('2026-08-21T10:00:00.000Z'),
+        rule: { metric: 'cpuPercent', name: 'High CPU', severity: 'critical' },
+        ruleId: 'rule-1',
+        state: 'OPEN',
+      };
+      const findMany = jest.fn().mockResolvedValue([row]);
+      const prisma = {
+        alertInstance: { findMany },
+      } as unknown as PrismaClient;
+
+      await expect(
+        new PrismaAlertRepository(prisma).listActive(),
+      ).resolves.toEqual([
+        {
+          acknowledgedAt: null,
+          agentId: 'agent-1',
+          dedupeKey: 'rule-1:agent-1',
+          id: 'instance-1',
+          metric: 'cpuPercent',
+          observedValue: 95,
+          openedAt: row.openedAt,
+          ruleId: 'rule-1',
+          ruleName: 'High CPU',
+          severity: 'critical',
+          state: 'OPEN',
+        },
+      ]);
+      expect(findMany).toHaveBeenCalledWith({
+        where: { state: { not: 'RESOLVED' } },
+        select: {
+          acknowledgedAt: true,
+          agentId: true,
+          dedupeKey: true,
+          id: true,
+          observedValue: true,
+          openedAt: true,
+          rule: { select: { metric: true, name: true, severity: true } },
+          ruleId: true,
+          state: true,
+        },
+      });
+    });
+
+    it('returns an empty list when there are no active instances', async () => {
+      const prisma = {
+        alertInstance: { findMany: jest.fn().mockResolvedValue([]) },
+      } as unknown as PrismaClient;
+
+      await expect(
+        new PrismaAlertRepository(prisma).listActive(),
+      ).resolves.toEqual([]);
+    });
+  });
 });

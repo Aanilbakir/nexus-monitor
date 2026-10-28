@@ -32,6 +32,8 @@ export {
   HISTORY_RANGES,
   isDashboardEvent,
   isDashboardHistoryResponse,
+  type AlertInstanceState,
+  type DashboardAlertInstance,
   type DashboardEvent,
   type DashboardFleetSnapshot,
   type DashboardHistoryPoint,

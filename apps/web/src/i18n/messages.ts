@@ -2,6 +2,9 @@ import type { Language } from './language';
 
 export const messages = {
   en: {
+    acknowledgeAlert: 'Acknowledge',
+    activeAlerts: 'Active alerts',
+    noActiveAlerts: 'No active alerts',
     allHosts: 'All hosts',
     apiKeyLabel: 'Dashboard API key',
     apiKeySubmit: 'Continue',
@@ -62,6 +65,9 @@ export const messages = {
     waitingMetrics: 'Waiting for the first metric sample',
   },
   tr: {
+    acknowledgeAlert: 'Onayla',
+    activeAlerts: 'Etkin uyarılar',
+    noActiveAlerts: 'Etkin uyarı yok',
     allHosts: 'Tüm hostlar',
     apiKeyLabel: 'Panel API anahtarı',
     apiKeySubmit: 'Devam et',

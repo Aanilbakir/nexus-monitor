@@ -107,6 +107,45 @@ describe('openDashboardEvents', () => {
     expect(onEvent).toHaveBeenCalledWith(metricEvent);
   });
 
+  it('parses alert.opened and alert.resolved frames into onEvent calls', async () => {
+    const alertPayload = {
+      agentId: '22222222-2222-4222-8222-222222222222',
+      metric: 'cpuPercent',
+      observedValue: 95,
+      ruleId: 'rule-1',
+      ruleName: 'High CPU',
+      severity: 'critical',
+    };
+    const openedEvent = {
+      hostId: '11111111-1111-4111-8111-111111111111',
+      occurredAt: '2026-08-21T10:00:00.000Z',
+      payload: alertPayload,
+      type: 'alert.opened',
+      version: 1,
+    };
+    const resolvedEvent = { ...openedEvent, type: 'alert.resolved' };
+    const body =
+      frame('ready', {}) +
+      frame('alert.opened', openedEvent) +
+      frame('alert.resolved', resolvedEvent);
+    const fetcher = vi.fn().mockResolvedValue(streamResponse(body));
+    const onEvent = vi.fn();
+
+    openDashboardEvents(
+      {
+        onDisconnect: vi.fn(),
+        onEvent,
+        onReady: vi.fn(),
+        onUnauthorized: vi.fn(),
+      },
+      fetcher,
+    );
+
+    await vi.waitFor(() => expect(onEvent).toHaveBeenCalledTimes(2));
+    expect(onEvent).toHaveBeenCalledWith(openedEvent);
+    expect(onEvent).toHaveBeenCalledWith(resolvedEvent);
+  });
+
   it('reports disconnection when the stream ends', async () => {
     const fetcher = vi
       .fn()

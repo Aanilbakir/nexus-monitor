@@ -1,4 +1,6 @@
 import type {
+  AlertInstanceState,
+  DashboardAlertInstance,
   DashboardFleetSnapshot,
   DashboardHistoryResponse,
   DashboardHost,
@@ -74,6 +76,78 @@ export async function fetchHostHistory(
   }
 
   return value;
+}
+
+export async function fetchActiveAlerts(
+  signal: AbortSignal,
+  fetcher: typeof fetch = fetch,
+): Promise<readonly DashboardAlertInstance[]> {
+  const response = await fetcher('/api/v1/alerts', {
+    headers: authorizationHeaders(),
+    signal,
+  });
+  if (response.status === 401) {
+    throw new DashboardUnauthorizedError();
+  }
+  if (!response.ok) {
+    throw new DashboardRequestError();
+  }
+
+  const value: unknown = await response.json();
+  if (!isActiveAlertsResponse(value)) {
+    throw new DashboardRequestError();
+  }
+
+  return value.alerts;
+}
+
+export async function acknowledgeAlert(
+  id: string,
+  fetcher: typeof fetch = fetch,
+): Promise<void> {
+  const response = await fetcher(
+    `/api/v1/alerts/${encodeURIComponent(id)}/acknowledge`,
+    { headers: authorizationHeaders(), method: 'POST' },
+  );
+  if (response.status === 401) {
+    throw new DashboardUnauthorizedError();
+  }
+  if (!response.ok) {
+    throw new DashboardRequestError();
+  }
+}
+
+function isActiveAlertsResponse(
+  value: unknown,
+): value is { alerts: readonly DashboardAlertInstance[] } {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.alerts) &&
+    value.alerts.every(isDashboardAlertInstance)
+  );
+}
+
+function isDashboardAlertInstance(
+  value: unknown,
+): value is DashboardAlertInstance {
+  return (
+    isRecord(value) &&
+    (value.acknowledgedAt === null || isTimestamp(value.acknowledgedAt)) &&
+    isString(value.agentId) &&
+    isString(value.id) &&
+    isString(value.metric) &&
+    typeof value.observedValue === 'number' &&
+    Number.isFinite(value.observedValue) &&
+    isTimestamp(value.openedAt) &&
+    isString(value.ruleId) &&
+    isString(value.ruleName) &&
+    isString(value.severity) &&
+    isAlertInstanceState(value.state)
+  );
+}
+
+function isAlertInstanceState(value: unknown): value is AlertInstanceState {
+  return value === 'ACKNOWLEDGED' || value === 'OPEN' || value === 'RESOLVED';
 }
 
 function isFleetSnapshot(value: unknown): value is DashboardFleetSnapshot {

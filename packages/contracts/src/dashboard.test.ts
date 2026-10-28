@@ -20,6 +20,15 @@ const metric: DashboardMetric = {
   uptimeSeconds: '3600',
 };
 
+const alertPayload = {
+  agentId: '22222222-2222-4222-8222-222222222222',
+  metric: 'cpuPercent',
+  observedValue: 97.5,
+  ruleId: '33333333-3333-4333-8333-333333333333',
+  ruleName: 'High CPU',
+  severity: 'critical',
+};
+
 describe('isDashboardEvent', () => {
   it.each<DashboardEvent>([
     {
@@ -38,6 +47,20 @@ describe('isDashboardEvent', () => {
         availability: 'offline',
         lastSeenAt: '2026-08-21T09:59:15.000Z',
       },
+    },
+    {
+      version: 1,
+      type: 'alert.opened',
+      hostId: 'd35f02d8-9aa8-4f6f-a8f0-079f2f0d05ba',
+      occurredAt: '2026-08-21T10:00:01.000Z',
+      payload: alertPayload,
+    },
+    {
+      version: 1,
+      type: 'alert.resolved',
+      hostId: 'd35f02d8-9aa8-4f6f-a8f0-079f2f0d05ba',
+      occurredAt: '2026-08-21T10:00:01.000Z',
+      payload: alertPayload,
     },
   ])('accepts a valid $type event', (event) => {
     expect(isDashboardEvent(event)).toBe(true);
@@ -60,6 +83,27 @@ describe('isDashboardEvent', () => {
       hostId: 'host',
       occurredAt: '2026-08-21T10:00:01.000Z',
       payload: { availability: 'warning', lastSeenAt: null },
+    },
+    {
+      version: 1,
+      type: 'alert.opened',
+      hostId: 'host',
+      occurredAt: '2026-08-21T10:00:01.000Z',
+      payload: { ...alertPayload, agentId: '' },
+    },
+    {
+      version: 1,
+      type: 'alert.opened',
+      hostId: 'host',
+      occurredAt: '2026-08-21T10:00:01.000Z',
+      payload: { ...alertPayload, observedValue: 'high' },
+    },
+    {
+      version: 1,
+      type: 'alert.resolved',
+      hostId: 'host',
+      occurredAt: '2026-08-21T10:00:01.000Z',
+      payload: { ...alertPayload, ruleName: '' },
     },
   ])('rejects malformed event %#', (event) => {
     expect(isDashboardEvent(event)).toBe(false);
