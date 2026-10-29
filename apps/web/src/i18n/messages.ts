@@ -3,6 +3,9 @@ import type { Language } from './language';
 export const messages = {
   en: {
     acknowledgeAlert: 'Acknowledge',
+    acknowledgeAlertLabel: (ruleName: string, hostname: string): string =>
+      `Acknowledge ${ruleName} on ${hostname}`,
+    acknowledgeFailed: 'Could not acknowledge the alert. Try again.',
     activeAlerts: 'Active alerts',
     noActiveAlerts: 'No active alerts',
     allHosts: 'All hosts',
@@ -66,6 +69,9 @@ export const messages = {
   },
   tr: {
     acknowledgeAlert: 'Onayla',
+    acknowledgeAlertLabel: (ruleName: string, hostname: string): string =>
+      `${ruleName} (${hostname}) uyarısını onayla`,
+    acknowledgeFailed: 'Uyarı onaylanamadı. Tekrar deneyin.',
     activeAlerts: 'Etkin uyarılar',
     noActiveAlerts: 'Etkin uyarı yok',
     allHosts: 'Tüm hostlar',

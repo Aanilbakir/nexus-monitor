@@ -1,25 +1,35 @@
-import type { DashboardHost } from '@nexus-monitor/contracts';
+import type {
+  DashboardAlertInstance,
+  DashboardHost,
+} from '@nexus-monitor/contracts';
 import type { ReactNode } from 'react';
 import type { ConnectionState } from '../dashboard/use-dashboard';
 import type { Language } from '../i18n/language';
 import type { Messages } from '../i18n/messages';
+import { AlertsPanel } from './alerts-panel';
 import { FleetSidebar } from './fleet-sidebar';
 
 export function AppShell({
+  alertAcknowledgeError,
+  alerts,
   children,
   connection,
   copy,
   hosts,
   language,
+  onAcknowledgeAlert,
   onLanguageChange,
   onSelectHost,
   selectedHostId,
 }: {
+  readonly alertAcknowledgeError: boolean;
+  readonly alerts: readonly DashboardAlertInstance[];
   readonly children: ReactNode;
   readonly connection: ConnectionState;
   readonly copy: Messages;
   readonly hosts: readonly DashboardHost[];
   readonly language: Language;
+  readonly onAcknowledgeAlert: (id: string) => void;
   readonly onLanguageChange: (language: Language) => void;
   readonly onSelectHost: (hostId: string) => void;
   readonly selectedHostId: string | null;
@@ -68,7 +78,16 @@ export function AppShell({
           onSelect={onSelectHost}
           selectedHostId={selectedHostId}
         />
-        <section className="console-content">{children}</section>
+        <section className="console-content">
+          <AlertsPanel
+            acknowledgeError={alertAcknowledgeError}
+            alerts={alerts}
+            copy={copy}
+            hosts={hosts}
+            onAcknowledge={onAcknowledgeAlert}
+          />
+          {children}
+        </section>
       </div>
     </main>
   );

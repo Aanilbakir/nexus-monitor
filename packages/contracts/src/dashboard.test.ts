@@ -22,6 +22,7 @@ const metric: DashboardMetric = {
 
 const alertPayload = {
   agentId: '22222222-2222-4222-8222-222222222222',
+  alertId: '44444444-4444-4444-8444-444444444444',
   metric: 'cpuPercent',
   observedValue: 97.5,
   ruleId: '33333333-3333-4333-8333-333333333333',
@@ -104,6 +105,27 @@ describe('isDashboardEvent', () => {
       hostId: 'host',
       occurredAt: '2026-08-21T10:00:01.000Z',
       payload: { ...alertPayload, ruleName: '' },
+    },
+    {
+      version: 1,
+      type: 'alert.opened',
+      hostId: 'host',
+      occurredAt: '2026-08-21T10:00:01.000Z',
+      payload: { ...alertPayload, alertId: '' },
+    },
+    {
+      version: 1,
+      type: 'alert.resolved',
+      hostId: 'host',
+      occurredAt: '2026-08-21T10:00:01.000Z',
+      payload: {
+        agentId: alertPayload.agentId,
+        metric: alertPayload.metric,
+        observedValue: alertPayload.observedValue,
+        ruleId: alertPayload.ruleId,
+        ruleName: alertPayload.ruleName,
+        severity: alertPayload.severity,
+      },
     },
   ])('rejects malformed event %#', (event) => {
     expect(isDashboardEvent(event)).toBe(false);

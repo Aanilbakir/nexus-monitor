@@ -82,7 +82,11 @@ const now = new Date('2026-08-21T10:00:00.000Z');
 describe('AlertIngestionCoordinator', () => {
   it('publishes alert.opened on the dashboard events publisher when a rule starts breaching', async () => {
     const repository = new FakeAlertRepository();
-    const evaluator = new AlertEvaluatorService(repository, () => now);
+    const evaluator = new AlertEvaluatorService(
+      repository,
+      () => now,
+      () => 'alert-cpu-1',
+    );
     const rules = new FakeAlertRuleRepository([cpuRule]);
     const samples = new FakeAlertSampleRepository();
     const publisher = new DashboardEventPublisher();
@@ -109,6 +113,7 @@ describe('AlertIngestionCoordinator', () => {
         occurredAt: now.toISOString(),
         payload: {
           agentId,
+          alertId: 'alert-cpu-1',
           metric: 'cpuPercent',
           observedValue: 95,
           ruleId: 'rule-cpu',
@@ -159,6 +164,7 @@ describe('AlertIngestionCoordinator', () => {
         occurredAt: now.toISOString(),
         payload: {
           agentId,
+          alertId: 'instance-1',
           metric: 'cpuPercent',
           observedValue: 10,
           ruleId: 'rule-cpu',
@@ -250,7 +256,11 @@ describe('AlertIngestionCoordinator', () => {
 
   it('evaluates enabled rules concurrently: a rule stuck on its DB query does not block the next rule from completing', async () => {
     const repository = new FakeAlertRepository();
-    const evaluator = new AlertEvaluatorService(repository, () => now);
+    const evaluator = new AlertEvaluatorService(
+      repository,
+      () => now,
+      () => 'alert-memory-1',
+    );
     const rules = new FakeAlertRuleRepository([cpuRule, memoryRule]);
     const samples = new FakeAlertSampleRepository();
     const callOrder: string[] = [];
@@ -295,6 +305,7 @@ describe('AlertIngestionCoordinator', () => {
         occurredAt: now.toISOString(),
         payload: {
           agentId,
+          alertId: 'alert-memory-1',
           metric: 'memoryUsedPercent',
           observedValue: 95,
           ruleId: 'rule-memory',
@@ -317,7 +328,11 @@ describe('AlertIngestionCoordinator', () => {
 
   it('swallows an evaluation error for one rule, logs it, and still evaluates the remaining rules', async () => {
     const repository = new FakeAlertRepository();
-    const evaluator = new AlertEvaluatorService(repository, () => now);
+    const evaluator = new AlertEvaluatorService(
+      repository,
+      () => now,
+      () => 'alert-memory-2',
+    );
     const rules = new FakeAlertRuleRepository([cpuRule, memoryRule]);
     const samples = new FakeAlertSampleRepository();
     samples.findRecentSamples = jest
@@ -351,6 +366,7 @@ describe('AlertIngestionCoordinator', () => {
         occurredAt: now.toISOString(),
         payload: {
           agentId,
+          alertId: 'alert-memory-2',
           metric: 'memoryUsedPercent',
           observedValue: 95,
           ruleId: 'rule-memory',

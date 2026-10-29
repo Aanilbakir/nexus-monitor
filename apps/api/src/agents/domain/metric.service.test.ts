@@ -369,7 +369,11 @@ describe('MetricService', () => {
       const coordinator = new AlertIngestionCoordinator(
         new FakeAlertRuleRepository(),
         new FakeAlertSampleRepository(),
-        new AlertEvaluatorService(alertRepository, () => now),
+        new AlertEvaluatorService(
+          alertRepository,
+          () => now,
+          () => 'alert-1',
+        ),
         dashboardEvents,
       );
       const service = new MetricService(
@@ -387,6 +391,7 @@ describe('MetricService', () => {
         occurredAt: now.toISOString(),
         payload: {
           agentId,
+          alertId: 'alert-1',
           metric: 'cpuPercent',
           observedValue: 25,
           ruleId: 'rule-cpu',

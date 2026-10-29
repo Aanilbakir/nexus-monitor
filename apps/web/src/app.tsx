@@ -36,10 +36,13 @@ export function App() {
 
   return (
     <AppShell
+      alertAcknowledgeError={dashboard.alertAcknowledgeError}
+      alerts={dashboard.alerts}
       connection={dashboard.connection}
       copy={copy}
       hosts={dashboard.hosts}
       language={language}
+      onAcknowledgeAlert={dashboard.acknowledgeAlert}
       onLanguageChange={changeLanguage}
       onSelectHost={dashboard.selectHost}
       selectedHostId={dashboard.selectedHostId}

@@ -72,8 +72,12 @@ export class AlertIngestionCoordinator implements MetricAlertHook {
       { collectedAt: input.collectedAt, value: currentValue },
     ];
 
-    const outcome = await this.evaluator.evaluate(rule, input.agentId, samples);
-    if (outcome !== 'opened' && outcome !== 'resolved') {
+    const { alertId, outcome } = await this.evaluator.evaluate(
+      rule,
+      input.agentId,
+      samples,
+    );
+    if ((outcome !== 'opened' && outcome !== 'resolved') || alertId === null) {
       return;
     }
 
@@ -82,6 +86,7 @@ export class AlertIngestionCoordinator implements MetricAlertHook {
       occurredAt: input.receivedAt.toISOString(),
       payload: {
         agentId: input.agentId,
+        alertId,
         metric: rule.metric,
         observedValue: currentValue,
         ruleId: rule.id,

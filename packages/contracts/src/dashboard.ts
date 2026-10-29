@@ -76,6 +76,7 @@ export interface DashboardAlertInstance {
 
 interface DashboardAlertTransitionPayload {
   readonly agentId: string;
+  readonly alertId: string;
   readonly metric: string;
   readonly observedValue: number;
   readonly ruleId: string;
@@ -153,6 +154,7 @@ export function isDashboardEvent(value: unknown): value is DashboardEvent {
 function isAlertTransitionPayload(value: Record<string, unknown>): boolean {
   return (
     isNonEmptyString(value.agentId) &&
+    isNonEmptyString(value.alertId) &&
     isNonEmptyString(value.metric) &&
     typeof value.observedValue === 'number' &&
     Number.isFinite(value.observedValue) &&

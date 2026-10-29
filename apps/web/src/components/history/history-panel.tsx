@@ -7,7 +7,10 @@ import { formatBytes, formatPercent, formatTimestamp } from '../format';
 import type { ChartSeries } from './chart-model';
 import { TimeSeriesChart } from './time-series-chart';
 
-const RANGE_LABELS: Record<HistoryRange, keyof Messages> = {
+const RANGE_LABELS: Record<
+  HistoryRange,
+  'range1h' | 'range6h' | 'range24h' | 'range7d' | 'range30d'
+> = {
   '1h': 'range1h',
   '6h': 'range6h',
   '24h': 'range24h',

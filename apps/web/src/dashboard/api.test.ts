@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   acknowledgeAlert,
+  AlertConflictError,
   DashboardRequestError,
   DashboardUnauthorizedError,
   fetchActiveAlerts,
@@ -254,4 +255,13 @@ describe('acknowledgeAlert', () => {
       ).rejects.toBeInstanceOf(DashboardRequestError);
     },
   );
+
+  it('rejects a 409 conflict with a distinguishable error', async () => {
+    await expect(
+      acknowledgeAlert(
+        activeAlert.id,
+        vi.fn().mockResolvedValue(new Response('conflict', { status: 409 })),
+      ),
+    ).rejects.toBeInstanceOf(AlertConflictError);
+  });
 });

@@ -6,6 +6,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import type {
+  DashboardAlertInstance,
   DashboardFleetSnapshot,
   DashboardHistoryResponse,
 } from '@nexus-monitor/contracts';
@@ -83,6 +84,13 @@ function requestHeader(
   return headers?.[name];
 }
 
+function emptyAlertsResponse(): Response {
+  return new Response(JSON.stringify({ alerts: [] }), {
+    headers: { 'content-type': 'application/json' },
+    status: 200,
+  });
+}
+
 function readyStreamResponse(): Response {
   // Left open deliberately: the real SSE endpoint never closes the stream
   // while connected (it relies on keepalive frames instead). Closing the
@@ -119,8 +127,12 @@ describe('App', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>((input) => {
-        if (requestUrl(input).includes('/dashboard/events')) {
+        const url = requestUrl(input);
+        if (url.includes('/dashboard/events')) {
           return Promise.resolve(readyStreamResponse());
+        }
+        if (url.includes('/api/v1/alerts')) {
+          return Promise.resolve(emptyAlertsResponse());
         }
         return Promise.resolve(
           new Response(JSON.stringify(snapshot), {
@@ -155,8 +167,12 @@ describe('App', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>((input) => {
-        if (requestUrl(input).includes('/dashboard/events')) {
+        const url = requestUrl(input);
+        if (url.includes('/dashboard/events')) {
           return Promise.resolve(readyStreamResponse());
+        }
+        if (url.includes('/api/v1/alerts')) {
+          return Promise.resolve(emptyAlertsResponse());
         }
         return Promise.resolve(
           new Response(JSON.stringify({ ...snapshot, hosts: [] }), {
@@ -182,6 +198,9 @@ describe('App', () => {
       const url = requestUrl(input);
       if (url.includes('/dashboard/events')) {
         return Promise.resolve(readyStreamResponse());
+      }
+      if (url.includes('/api/v1/alerts')) {
+        return Promise.resolve(emptyAlertsResponse());
       }
       if (url.includes('/history?')) {
         return new Promise<Response>((resolve) => {
@@ -217,6 +236,9 @@ describe('App', () => {
       if (url.includes('/dashboard/events')) {
         return Promise.resolve(readyStreamResponse());
       }
+      if (url.includes('/api/v1/alerts')) {
+        return Promise.resolve(emptyAlertsResponse());
+      }
       snapshotCalls += 1;
       if (snapshotCalls === 1) {
         return Promise.resolve(new Response('unavailable', { status: 503 }));
@@ -249,8 +271,12 @@ describe('App', () => {
 
   it('stores an entered key and loads the dashboard using it as the bearer header', async () => {
     const fetcher = vi.fn<typeof fetch>((input) => {
-      if (requestUrl(input).includes('/dashboard/events')) {
+      const url = requestUrl(input);
+      if (url.includes('/dashboard/events')) {
         return Promise.resolve(readyStreamResponse());
+      }
+      if (url.includes('/api/v1/alerts')) {
+        return Promise.resolve(emptyAlertsResponse());
       }
       return Promise.resolve(
         new Response(JSON.stringify(snapshot), { status: 200 }),
@@ -293,5 +319,94 @@ describe('App', () => {
     expect(
       window.sessionStorage.getItem(DASHBOARD_API_KEY_STORAGE_KEY),
     ).toBeNull();
+  });
+
+  it('shows active alerts on the host view and lets an operator acknowledge one', async () => {
+    saveApiKey(apiKey);
+    const activeAlert: DashboardAlertInstance = {
+      acknowledgedAt: null,
+      agentId: snapshot.hosts[0]!.agentId,
+      id: '55555555-5555-4555-8555-555555555555',
+      metric: 'cpuPercent',
+      observedValue: 95,
+      openedAt: '2026-08-21T09:59:00.000Z',
+      ruleId: 'rule-1',
+      ruleName: 'High CPU',
+      severity: 'critical',
+      state: 'OPEN',
+    };
+    const fetcher = vi.fn<typeof fetch>((input) => {
+      const url = requestUrl(input);
+      if (url.includes('/dashboard/events')) {
+        return Promise.resolve(readyStreamResponse());
+      }
+      if (url.includes('/acknowledge')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({}), { status: 200 }),
+        );
+      }
+      if (url.includes('/api/v1/alerts')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ alerts: [activeAlert] }), {
+            status: 200,
+          }),
+        );
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify(snapshot), { status: 200 }),
+      );
+    });
+    vi.stubGlobal('fetch', fetcher);
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole('heading', { name: messages.en.activeAlerts }),
+    ).toBeVisible();
+    expect(screen.getByText(activeAlert.ruleName)).toBeVisible();
+
+    const acknowledgeButtonName = messages.en.acknowledgeAlertLabel(
+      activeAlert.ruleName,
+      snapshot.hosts[0]!.hostname,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: acknowledgeButtonName }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: acknowledgeButtonName }),
+      ).toBeNull(),
+    );
+  });
+
+  it('keeps the alerts panel visible on the empty fleet view', async () => {
+    saveApiKey(apiKey);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = requestUrl(input);
+        if (url.includes('/dashboard/events')) {
+          return Promise.resolve(readyStreamResponse());
+        }
+        if (url.includes('/api/v1/alerts')) {
+          return Promise.resolve(emptyAlertsResponse());
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ ...snapshot, hosts: [] }), {
+            status: 200,
+          }),
+        );
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByText('No monitored hosts')).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: messages.en.activeAlerts }),
+    ).toBeVisible();
+    expect(screen.getByText(messages.en.noActiveAlerts)).toBeVisible();
   });
 });

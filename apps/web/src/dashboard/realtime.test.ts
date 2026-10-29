@@ -110,6 +110,7 @@ describe('openDashboardEvents', () => {
   it('parses alert.opened and alert.resolved frames into onEvent calls', async () => {
     const alertPayload = {
       agentId: '22222222-2222-4222-8222-222222222222',
+      alertId: '44444444-4444-4444-8444-444444444444',
       metric: 'cpuPercent',
       observedValue: 95,
       ruleId: 'rule-1',

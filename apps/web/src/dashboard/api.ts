@@ -25,6 +25,14 @@ export class DashboardUnauthorizedError extends Error {
   }
 }
 
+export class AlertConflictError extends DashboardRequestError {
+  public constructor() {
+    super();
+    this.message = 'The alert state changed. Refresh the alert list.';
+    this.name = 'AlertConflictError';
+  }
+}
+
 function authorizationHeaders(): Record<string, string> {
   const apiKey = loadApiKey();
   return apiKey ? { authorization: `Bearer ${apiKey}` } : {};
@@ -111,6 +119,9 @@ export async function acknowledgeAlert(
   );
   if (response.status === 401) {
     throw new DashboardUnauthorizedError();
+  }
+  if (response.status === 409) {
+    throw new AlertConflictError();
   }
   if (!response.ok) {
     throw new DashboardRequestError();

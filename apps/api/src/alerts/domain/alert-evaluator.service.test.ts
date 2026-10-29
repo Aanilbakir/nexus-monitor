@@ -56,9 +56,9 @@ describe('AlertEvaluatorService', () => {
       () => 'instance-1',
     );
 
-    await expect(service.evaluate(rule, agentId, [sample(90)])).resolves.toBe(
-      'opened',
-    );
+    await expect(
+      service.evaluate(rule, agentId, [sample(90)]),
+    ).resolves.toEqual({ alertId: 'instance-1', outcome: 'opened' });
     expect(repository.opened).toEqual({
       agentId,
       dedupeKey: 'rule-1:agent-1',
@@ -74,9 +74,9 @@ describe('AlertEvaluatorService', () => {
     repository.openResult = 'already_active';
     const service = new AlertEvaluatorService(repository, () => now);
 
-    await expect(service.evaluate(rule, agentId, [sample(90)])).resolves.toBe(
-      'already_active',
-    );
+    await expect(
+      service.evaluate(rule, agentId, [sample(90)]),
+    ).resolves.toEqual({ alertId: null, outcome: 'already_active' });
   });
 
   it('resolves the active alert when the rule clears', async () => {
@@ -92,9 +92,9 @@ describe('AlertEvaluatorService', () => {
     };
     const service = new AlertEvaluatorService(repository, () => now);
 
-    await expect(service.evaluate(rule, agentId, [sample(10)])).resolves.toBe(
-      'resolved',
-    );
+    await expect(
+      service.evaluate(rule, agentId, [sample(10)]),
+    ).resolves.toEqual({ alertId: 'instance-1', outcome: 'resolved' });
     expect(repository.resolved).toEqual({ at: now, id: 'instance-1' });
   });
 
@@ -102,18 +102,19 @@ describe('AlertEvaluatorService', () => {
     const repository = new FakeAlertRepository();
     const service = new AlertEvaluatorService(repository, () => now);
 
-    await expect(service.evaluate(rule, agentId, [sample(10)])).resolves.toBe(
-      'no_active_instance',
-    );
+    await expect(
+      service.evaluate(rule, agentId, [sample(10)]),
+    ).resolves.toEqual({ alertId: null, outcome: 'no_active_instance' });
   });
 
   it('takes no action when there is insufficient data', async () => {
     const repository = new FakeAlertRepository();
     const service = new AlertEvaluatorService(repository, () => now);
 
-    await expect(service.evaluate(rule, agentId, [])).resolves.toBe(
-      'insufficient_data',
-    );
+    await expect(service.evaluate(rule, agentId, [])).resolves.toEqual({
+      alertId: null,
+      outcome: 'insufficient_data',
+    });
     expect(repository.opened).toBeNull();
   });
 
@@ -131,8 +132,8 @@ describe('AlertEvaluatorService', () => {
     repository.resolveResult = false;
     const service = new AlertEvaluatorService(repository, () => now);
 
-    await expect(service.evaluate(rule, agentId, [sample(10)])).resolves.toBe(
-      'no_active_instance',
-    );
+    await expect(
+      service.evaluate(rule, agentId, [sample(10)]),
+    ).resolves.toEqual({ alertId: null, outcome: 'no_active_instance' });
   });
 });

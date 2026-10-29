@@ -235,6 +235,52 @@ button {
 .console-content {
   min-width: 0;
 }
+.alerts-panel {
+  padding: 18px clamp(24px, 4vw, 58px) 0;
+}
+.alerts-panel h2 {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font: 10px var(--mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.alerts-panel-error {
+  margin: 0 0 12px;
+  color: var(--danger);
+  font: 11px var(--mono);
+}
+.alerts-panel ul {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+.alerts-panel li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+}
+.alert-rule-name {
+  flex: 1;
+  color: var(--text);
+  font: 12px var(--mono);
+}
+.alert-severity {
+  color: var(--danger);
+  font: 10px var(--mono);
+  text-transform: uppercase;
+}
+.alert-host {
+  color: var(--muted);
+  font: 11px var(--mono);
+}
+.alerts-panel .action-button {
+  margin-top: 0;
+}
 .host-detail {
   padding: clamp(24px, 4vw, 58px);
 }
